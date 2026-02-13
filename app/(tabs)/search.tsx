@@ -51,6 +51,7 @@ export default function SearchScreen() {
 
       {mode === 'designs' ? (
         <FlatList
+          key="designs"
           data={designResults}
           keyExtractor={(d) => d.id}
           numColumns={2}
@@ -66,6 +67,7 @@ export default function SearchScreen() {
         />
       ) : (
         <FlatList
+          key="users"
           data={userResults}
           keyExtractor={(u) => u.id}
           renderItem={({ item }) => <UserCard user={item} />}
