@@ -1,10 +1,8 @@
-import MapboxGL from '@rnmapbox/maps';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import MapView, { Marker, type Region } from 'react-native-maps';
 
 import type { Sticker } from '@/lib/types';
-
-MapboxGL.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN ?? '');
 
 interface StickerMapProps {
   stickers: Sticker[];
@@ -14,16 +12,10 @@ interface StickerMapProps {
   zoomLevel?: number;
 }
 
-function toGeoJSON(stickers: Sticker[]): GeoJSON.FeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: stickers.map((s) => ({
-      type: 'Feature' as const,
-      id: s.id,
-      properties: { id: s.id },
-      geometry: { type: 'Point' as const, coordinates: [s.longitude, s.latitude] },
-    })),
-  };
+function zoomToDelta(zoom: number) {
+  // Rough conversion from zoom level to lat/lng delta
+  const delta = 360 / Math.pow(2, zoom);
+  return { latitudeDelta: delta, longitudeDelta: delta };
 }
 
 export function StickerMap({
@@ -33,48 +25,42 @@ export function StickerMap({
   centerCoordinate,
   zoomLevel = 11,
 }: StickerMapProps) {
-  const center =
-    centerCoordinate ??
+  const center = centerCoordinate ??
     (stickers.length > 0
       ? [stickers[0].longitude, stickers[0].latitude]
       : [-73.97, 40.71]);
 
+  const region: Region = {
+    latitude: center[1],
+    longitude: center[0],
+    ...zoomToDelta(zoomLevel),
+  };
+
   return (
     <View style={[styles.container, style]}>
-      <MapboxGL.MapView
+      <MapView
         style={styles.map}
-        styleURL={MapboxGL.StyleURL.Street}
+        initialRegion={region}
         scrollEnabled={interactive}
         zoomEnabled={interactive}
         rotateEnabled={false}
-        pitchEnabled={false}
-        onPress={(feature) => {
-          if (!interactive) return;
-          const props = feature.features?.[0]?.properties;
-          if (props?.id) {
-            router.push(`/sticker/${props.id}`);
-          }
-        }}>
-        <MapboxGL.Camera centerCoordinate={center} zoomLevel={zoomLevel} />
-        <MapboxGL.ShapeSource
-          id="stickers"
-          shape={toGeoJSON(stickers)}
-          onPress={(e) => {
-            if (!interactive) return;
-            const id = e.features?.[0]?.properties?.id;
-            if (id) router.push(`/sticker/${id}`);
-          }}>
-          <MapboxGL.CircleLayer
-            id="sticker-circles"
-            style={{
-              circleRadius: 8,
-              circleColor: '#0a7ea4',
-              circleStrokeWidth: 2,
-              circleStrokeColor: '#fff',
+        pitchEnabled={false}>
+        {stickers.map((sticker) => (
+          <Marker
+            key={sticker.id}
+            coordinate={{
+              latitude: sticker.latitude,
+              longitude: sticker.longitude,
+            }}
+            pinColor="#0a7ea4"
+            onPress={() => {
+              if (interactive) {
+                router.push(`/sticker/${sticker.id}`);
+              }
             }}
           />
-        </MapboxGL.ShapeSource>
-      </MapboxGL.MapView>
+        ))}
+      </MapView>
     </View>
   );
 }

@@ -52,12 +52,6 @@
         }
       ],
       [
-        "@rnmapbox/maps",
-        {
-          "RNMapboxMapsImpl": "mapbox"
-        }
-      ],
-      [
         "expo-location",
         {
           "locationWhenInUsePermission": "HMNI needs your location to tag where you spotted stickers."

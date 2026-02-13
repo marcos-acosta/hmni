@@ -1,4 +1,6 @@
+import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DesignCard } from '@/components/design-card';
@@ -7,6 +9,13 @@ import { designs } from '@/lib/mock-data';
 
 export default function BrowseScreen() {
   const insets = useSafeAreaInsets();
+  const [data, setData] = useState(designs);
+
+  useFocusEffect(
+    useCallback(() => {
+      setData([...designs]);
+    }, [])
+  );
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -14,7 +23,7 @@ export default function BrowseScreen() {
         Browse
       </ThemedText>
       <FlatList
-        data={designs}
+        data={data}
         keyExtractor={(d) => d.id}
         numColumns={2}
         contentContainerStyle={styles.grid}

@@ -55,6 +55,7 @@ export default function SearchScreen() {
           data={designResults}
           keyExtractor={(d) => d.id}
           numColumns={2}
+          keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.grid}
           renderItem={({ item }) => <DesignCard design={item} />}
           ListEmptyComponent={
@@ -70,6 +71,7 @@ export default function SearchScreen() {
           key="users"
           data={userResults}
           keyExtractor={(u) => u.id}
+          keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => <UserCard user={item} />}
           ListEmptyComponent={
             query ? (
