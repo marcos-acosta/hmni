@@ -6,3 +6,7 @@ compatibility_date = "2025-01-01"
 binding = "hmni_db"
 database_name = "hmni-db"
 database_id = "ee941a5e-0ca0-4ed2-8f5c-53b3ba82d753"
+
+[[r2_buckets]]
+binding = "hmni_photos"
+bucket_name = "hmni-photos"

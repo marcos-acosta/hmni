@@ -1,8 +1,7 @@
 import { Image } from 'expo-image';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 
 import { StickerMap } from '@/components/sticker-map';
 import { ThemedText } from '@/components/themed-text';
@@ -83,7 +82,7 @@ export default function DesignDetailScreen() {
           <ThemedText type="subtitle" style={styles.sectionTitle}>
             Map
           </ThemedText>
-          <StickerMap stickers={stickers} style={styles.map} interactive={false} />
+          <StickerMap stickers={stickers} style={styles.map} interactive={true} />
         </>
       ) : (
         <ThemedText style={styles.empty}>No stickers spotted yet.</ThemedText>

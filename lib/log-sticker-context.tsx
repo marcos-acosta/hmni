@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import { createDesign, createSticker } from './api';
+import { createDesign, createSticker, uploadPhoto } from './api';
 import type { Sticker } from './types';
 
 interface LogStickerState {
@@ -54,13 +54,19 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
   }
 
   async function submit(userId: string): Promise<Sticker> {
+    // Upload photo to R2
+    let photoUrl = '';
+    if (state.photoUri) {
+      photoUrl = await uploadPhoto(state.photoUri);
+    }
+
     let designId = state.designId;
 
     if (!designId && state.newDesignName) {
       const design = await createDesign({
         name: state.newDesignName,
         description: state.newDesignDescription || '',
-        imageUrl: state.photoUri || 'https://picsum.photos/seed/new/400/400',
+        imageUrl: photoUrl || 'https://picsum.photos/seed/new/400/400',
         creatorId: userId,
       });
       designId = design.id;
@@ -69,7 +75,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
     const sticker = await createSticker({
       designId: designId!,
       userId,
-      photoUri: state.photoUri || '',
+      photoUri: photoUrl,
       latitude: state.latitude || 0,
       longitude: state.longitude || 0,
       locationName: 'Logged location',

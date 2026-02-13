@@ -2,6 +2,25 @@ import type { Design, Sticker, User } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
 
+// ---------- Photos ----------
+
+export async function uploadPhoto(localUri: string): Promise<string> {
+  const formData = new FormData();
+  // React Native's FormData accepts this shape for file uploads
+  formData.append('photo', {
+    uri: localUri,
+    type: 'image/jpeg',
+    name: 'photo.jpg',
+  } as unknown as Blob);
+
+  const res = await fetch(`${BASE_URL}/photos`, {
+    method: 'POST',
+    body: formData,
+  });
+  const data: { url: string } = await res.json();
+  return data.url;
+}
+
 // ---------- Row types (snake_case from D1) ----------
 
 interface DesignRow {
