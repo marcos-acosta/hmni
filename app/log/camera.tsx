@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,17 +10,33 @@ import { useLogSticker } from '@/lib/log-sticker-context';
 export default function CameraScreen() {
   const cameraRef = useRef<CameraView>(null);
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [locationGranted, setLocationGranted] = useState(false);
+  const [permissionsReady, setPermissionsReady] = useState(false);
   const [capturing, setCapturing] = useState(false);
   const { setPhoto } = useLogSticker();
 
-  if (!cameraPermission) {
+  useEffect(() => {
+    async function requestAll() {
+      const [, locResult] = await Promise.all([
+        requestCameraPermission(),
+        Location.requestForegroundPermissionsAsync(),
+      ]);
+      setLocationGranted(locResult.status === 'granted');
+      setPermissionsReady(true);
+    }
+    requestAll();
+  }, []);
+
+  if (!permissionsReady || !cameraPermission) {
     return <View style={styles.container} />;
   }
 
   if (!cameraPermission.granted) {
     return (
       <View style={styles.center}>
-        <ThemedText style={styles.message}>Camera access is needed to photograph stickers.</ThemedText>
+        <ThemedText style={styles.message}>
+          Camera access is needed to photograph stickers.
+        </ThemedText>
         <Pressable style={styles.button} onPress={requestCameraPermission}>
           <ThemedText style={styles.buttonText}>Grant Camera Access</ThemedText>
         </Pressable>
@@ -33,18 +49,21 @@ export default function CameraScreen() {
     setCapturing(true);
 
     try {
-      // Request location permission and get location
-      const { status } = await Location.requestForegroundPermissionsAsync();
       let lat = 40.7128;
       let lng = -74.006;
 
-      if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        lat = loc.coords.latitude;
-        lng = loc.coords.longitude;
+      const [photo, location] = await Promise.all([
+        cameraRef.current.takePictureAsync({ quality: 0.7 }),
+        locationGranted
+          ? Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+          : null,
+      ]);
+
+      if (location) {
+        lat = location.coords.latitude;
+        lng = location.coords.longitude;
       }
 
-      const photo = await cameraRef.current.takePictureAsync({ quality: 0.7 });
       if (photo) {
         setPhoto(photo.uri, lat, lng);
         router.push('/log/match-design');
