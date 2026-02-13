@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import { addDesign, addSticker } from './mock-data';
+import { createDesign, createSticker } from './api';
 import type { Sticker } from './types';
 
 interface LogStickerState {
@@ -18,7 +18,7 @@ interface LogStickerContextValue extends LogStickerState {
   setDesignId: (id: string) => void;
   setNewDesign: (name: string, description: string) => void;
   setNote: (note: string) => void;
-  submit: (userId: string) => Sticker;
+  submit: (userId: string) => Promise<Sticker>;
   reset: () => void;
 }
 
@@ -53,11 +53,11 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, note }));
   }
 
-  function submit(userId: string): Sticker {
+  async function submit(userId: string): Promise<Sticker> {
     let designId = state.designId;
 
     if (!designId && state.newDesignName) {
-      const design = addDesign({
+      const design = await createDesign({
         name: state.newDesignName,
         description: state.newDesignDescription || '',
         imageUrl: state.photoUri || 'https://picsum.photos/seed/new/400/400',
@@ -66,7 +66,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
       designId = design.id;
     }
 
-    const sticker = addSticker({
+    const sticker = await createSticker({
       designId: designId!,
       userId,
       photoUri: state.photoUri || '',

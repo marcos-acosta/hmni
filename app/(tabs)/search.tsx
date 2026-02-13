@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DesignCard } from '@/components/design-card';
 import { ThemedText } from '@/components/themed-text';
 import { UserCard } from '@/components/user-card';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { searchDesigns, searchUsers } from '@/lib/mock-data';
-
+import { searchDesignsApi, searchUsersApi } from '@/lib/api';
+import type { Design, User } from '@/lib/types';
 
 type Mode = 'designs' | 'users';
 
@@ -17,8 +17,24 @@ export default function SearchScreen() {
   const [mode, setMode] = useState<Mode>('designs');
   const textColor = useThemeColor({}, 'text');
 
-  const designResults = mode === 'designs' && query ? searchDesigns(query) : [];
-  const userResults = mode === 'users' && query ? searchUsers(query) : [];
+  const [designResults, setDesignResults] = useState<Design[]>([]);
+  const [userResults, setUserResults] = useState<(User & { stickerCount?: number })[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!query) {
+      setDesignResults([]);
+      setUserResults([]);
+      return;
+    }
+    let stale = false;
+    setSearching(true);
+    const search = mode === 'designs'
+      ? searchDesignsApi(query).then((r) => { if (!stale) setDesignResults(r); })
+      : searchUsersApi(query).then((r) => { if (!stale) setUserResults(r); });
+    search.finally(() => { if (!stale) setSearching(false); });
+    return () => { stale = true; };
+  }, [query, mode]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -49,6 +65,8 @@ export default function SearchScreen() {
         />
       </View>
 
+      {searching && <ActivityIndicator style={styles.loader} />}
+
       {mode === 'designs' ? (
         <FlatList
           key="designs"
@@ -59,11 +77,13 @@ export default function SearchScreen() {
           contentContainerStyle={styles.grid}
           renderItem={({ item }) => <DesignCard design={item} />}
           ListEmptyComponent={
-            query ? (
-              <ThemedText style={styles.empty}>No designs found.</ThemedText>
-            ) : (
-              <ThemedText style={styles.empty}>Type to search designs.</ThemedText>
-            )
+            !searching ? (
+              query ? (
+                <ThemedText style={styles.empty}>No designs found.</ThemedText>
+              ) : (
+                <ThemedText style={styles.empty}>Type to search designs.</ThemedText>
+              )
+            ) : null
           }
         />
       ) : (
@@ -72,13 +92,15 @@ export default function SearchScreen() {
           data={userResults}
           keyExtractor={(u) => u.id}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => <UserCard user={item} />}
+          renderItem={({ item }) => <UserCard user={item} stickerCount={item.stickerCount} />}
           ListEmptyComponent={
-            query ? (
-              <ThemedText style={styles.empty}>No users found.</ThemedText>
-            ) : (
-              <ThemedText style={styles.empty}>Type to search users.</ThemedText>
-            )
+            !searching ? (
+              query ? (
+                <ThemedText style={styles.empty}>No users found.</ThemedText>
+              ) : (
+                <ThemedText style={styles.empty}>Type to search users.</ThemedText>
+              )
+            ) : null
           }
         />
       )}
@@ -145,4 +167,5 @@ const styles = StyleSheet.create({
     opacity: 0.5,
     marginTop: 32,
   },
+  loader: { marginTop: 16 },
 });

@@ -1,14 +1,37 @@
 import { Image } from 'expo-image';
 import { Link, useLocalSearchParams } from 'expo-router';
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 import { StickerMap } from '@/components/sticker-map';
 import { ThemedText } from '@/components/themed-text';
-import { getDesignById, getStickersForDesign, getUserById } from '@/lib/mock-data';
+import { fetchDesign, fetchDesignStickers } from '@/lib/api';
+import type { Design, Sticker } from '@/lib/types';
 
 export default function DesignDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const design = getDesignById(id);
+  const [design, setDesign] = useState<(Design & { creatorUsername?: string }) | null>(null);
+  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let stale = false;
+      Promise.all([fetchDesign(id), fetchDesignStickers(id)]).then(([d, s]) => {
+        if (!stale) {
+          setDesign(d);
+          setStickers(s);
+          setLoading(false);
+        }
+      });
+      return () => { stale = true; };
+    }, [id])
+  );
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator /></View>;
+  }
 
   if (!design) {
     return (
@@ -18,19 +41,16 @@ export default function DesignDetailScreen() {
     );
   }
 
-  const creator = getUserById(design.creatorId);
-  const stickers = getStickersForDesign(design.id);
-
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
       <Image source={design.imageUrl} style={styles.heroImage} contentFit="cover" />
       <View style={styles.info}>
         <ThemedText type="title">{design.name}</ThemedText>
         <ThemedText style={styles.description}>{design.description}</ThemedText>
-        {creator && (
-          <Link href={`/user/${creator.id}`} asChild>
+        {design.creatorUsername && (
+          <Link href={`/user/${design.creatorId}`} asChild>
             <Pressable>
-              <ThemedText type="link">by {creator.username}</ThemedText>
+              <ThemedText type="link">by {design.creatorUsername}</ThemedText>
             </Pressable>
           </Link>
         )}

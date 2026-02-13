@@ -2,11 +2,10 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { getStickersForUser } from '@/lib/mock-data';
 import type { User } from '@/lib/types';
 
-export function UserCard({ user }: { user: User }) {
-  const stickerCount = getStickersForUser(user.id).length;
+export function UserCard({ user, stickerCount }: { user: User; stickerCount?: number }) {
+  const count = stickerCount ?? 0;
 
   return (
     <Link href={`/user/${user.id}`} asChild>
@@ -19,7 +18,7 @@ export function UserCard({ user }: { user: User }) {
         <View style={styles.info}>
           <ThemedText style={styles.username}>{user.username}</ThemedText>
           <ThemedText style={styles.stats}>
-            {stickerCount} sticker{stickerCount !== 1 ? 's' : ''}
+            {count} sticker{count !== 1 ? 's' : ''}
           </ThemedText>
         </View>
       </Pressable>

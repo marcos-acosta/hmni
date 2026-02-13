@@ -1,0 +1,19 @@
+{
+  "name": "hmni-server",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --ip 0.0.0.0",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute hmni-db --file=schema.sql",
+    "db:seed": "wrangler d1 execute hmni-db --file=seed.sql",
+    "db:migrate:local": "wrangler d1 execute hmni-db --local --file=schema.sql",
+    "db:seed:local": "wrangler d1 execute hmni-db --local --file=seed.sql"
+  },
+  "dependencies": {
+    "hono": "^4.7.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,31 +1,43 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useAuth } from '@/lib/auth-context';
 import { useLogSticker } from '@/lib/log-sticker-context';
-import { getDesignById } from '@/lib/mock-data';
+import { fetchDesign } from '@/lib/api';
 
 export default function NoteScreen() {
   const { photoUri, designId, newDesignName, note, setNote, submit } = useLogSticker();
   const { user } = useAuth();
   const textColor = useThemeColor({}, 'text');
+  const [designLabel, setDesignLabel] = useState(newDesignName ?? 'New Design');
+  const [submitting, setSubmitting] = useState(false);
 
-  const designLabel = designId
-    ? getDesignById(designId)?.name ?? 'Unknown'
-    : newDesignName ?? 'New Design';
+  useEffect(() => {
+    if (designId) {
+      fetchDesign(designId).then((d) => {
+        if (d) setDesignLabel(d.name);
+      });
+    }
+  }, [designId]);
 
-  function handleSubmit() {
-    if (!user) return;
-    const sticker = submit(user.id);
-    router.dismissAll();
-    router.push(`/sticker/${sticker.id}`);
+  async function handleSubmit() {
+    if (!user || submitting) return;
+    setSubmitting(true);
+    try {
+      const sticker = await submit(user.id);
+      router.dismissAll();
+      router.push(`/sticker/${sticker.id}`);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       <ThemedText type="subtitle">Summary</ThemedText>
 
       <View style={styles.summaryRow}>
@@ -48,8 +60,14 @@ export default function NoteScreen() {
         numberOfLines={3}
       />
 
-      <Pressable style={styles.button} onPress={handleSubmit}>
-        <ThemedText style={styles.buttonText}>Log Sticker</ThemedText>
+      <Pressable
+        style={[styles.button, submitting && styles.buttonDisabled]}
+        onPress={handleSubmit}
+        disabled={submitting}
+      >
+        <ThemedText style={styles.buttonText}>
+          {submitting ? 'Logging...' : 'Log Sticker'}
+        </ThemedText>
       </Pressable>
     </ScrollView>
   );
@@ -76,6 +94,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     marginTop: 24,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });

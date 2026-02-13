@@ -3,19 +3,19 @@ import { Link } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { getDesignsForUser, getStickersForUser } from '@/lib/mock-data';
 import type { User, Sticker } from '@/lib/types';
 
 export function UserProfile({
   user,
+  stickers,
+  designCount,
   actions,
 }: {
   user: User;
+  stickers: Sticker[];
+  designCount: number;
   actions?: React.ReactNode;
 }) {
-  const stickers = getStickersForUser(user.id);
-  const designCount = getDesignsForUser(user.id).length;
-
   return (
     <FlatList
       data={stickers}

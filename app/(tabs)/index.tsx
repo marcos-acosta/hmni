@@ -1,19 +1,28 @@
 import { useCallback, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DesignCard } from '@/components/design-card';
 import { ThemedText } from '@/components/themed-text';
-import { designs } from '@/lib/mock-data';
+import { fetchDesigns } from '@/lib/api';
+import type { Design } from '@/lib/types';
 
 export default function BrowseScreen() {
   const insets = useSafeAreaInsets();
-  const [data, setData] = useState(designs);
+  const [data, setData] = useState<Design[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
-      setData([...designs]);
+      let stale = false;
+      fetchDesigns().then((designs) => {
+        if (!stale) {
+          setData(designs);
+          setLoading(false);
+        }
+      });
+      return () => { stale = true; };
     }, [])
   );
 
@@ -22,13 +31,17 @@ export default function BrowseScreen() {
       <ThemedText type="title" style={styles.heading}>
         Browse
       </ThemedText>
-      <FlatList
-        data={data}
-        keyExtractor={(d) => d.id}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
-        renderItem={({ item }) => <DesignCard design={item} />}
-      />
+      {loading ? (
+        <ActivityIndicator style={styles.loader} />
+      ) : (
+        <FlatList
+          data={data}
+          keyExtractor={(d) => d.id}
+          numColumns={2}
+          contentContainerStyle={styles.grid}
+          renderItem={({ item }) => <DesignCard design={item} />}
+        />
+      )}
     </View>
   );
 }
@@ -37,4 +50,5 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   heading: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 8 },
   grid: { padding: 8 },
+  loader: { marginTop: 32 },
 });

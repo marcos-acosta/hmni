@@ -1,13 +1,24 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import { designs } from '@/lib/mock-data';
+import { fetchDesigns } from '@/lib/api';
 import { useLogSticker } from '@/lib/log-sticker-context';
+import type { Design } from '@/lib/types';
 
 export default function MatchDesignScreen() {
   const { photoUri, setDesignId } = useLogSticker();
+  const [designs, setDesigns] = useState<Design[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDesigns().then((d) => {
+      setDesigns(d);
+      setLoading(false);
+    });
+  }, []);
 
   function pickDesign(id: string) {
     setDesignId(id);
@@ -29,6 +40,7 @@ export default function MatchDesignScreen() {
           <Pressable style={styles.newButton} onPress={() => router.push('/log/new-design')}>
             <ThemedText style={styles.newButtonText}>+ New Design</ThemedText>
           </Pressable>
+          {loading && <ActivityIndicator style={styles.loader} />}
         </View>
       }
       renderItem={({ item }) => (
@@ -59,6 +71,7 @@ const styles = StyleSheet.create({
     color: '#0a7ea4',
     fontWeight: '600',
   },
+  loader: { marginTop: 12 },
   designCard: {
     flex: 1,
     margin: 4,

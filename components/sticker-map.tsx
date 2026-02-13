@@ -10,10 +10,11 @@ interface StickerMapProps {
   interactive?: boolean;
   centerCoordinate?: [number, number]; // [lng, lat]
   zoomLevel?: number;
+  initialRegion?: Region;
+  onRegionChange?: (region: Region) => void;
 }
 
 function zoomToDelta(zoom: number) {
-  // Rough conversion from zoom level to lat/lng delta
   const delta = 360 / Math.pow(2, zoom);
   return { latitudeDelta: delta, longitudeDelta: delta };
 }
@@ -24,13 +25,15 @@ export function StickerMap({
   interactive = true,
   centerCoordinate,
   zoomLevel = 11,
+  initialRegion: savedRegion,
+  onRegionChange,
 }: StickerMapProps) {
   const center = centerCoordinate ??
     (stickers.length > 0
       ? [stickers[0].longitude, stickers[0].latitude]
       : [-73.97, 40.71]);
 
-  const region: Region = {
+  const defaultRegion: Region = {
     latitude: center[1],
     longitude: center[0],
     ...zoomToDelta(zoomLevel),
@@ -40,7 +43,8 @@ export function StickerMap({
     <View style={[styles.container, style]}>
       <MapView
         style={styles.map}
-        initialRegion={region}
+        initialRegion={savedRegion ?? defaultRegion}
+        onRegionChangeComplete={onRegionChange}
         scrollEnabled={interactive}
         zoomEnabled={interactive}
         rotateEnabled={false}

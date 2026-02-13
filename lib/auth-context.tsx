@@ -1,7 +1,9 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import { getUserById, users, CURRENT_USER_ID } from './mock-data';
+import { fetchUser, createUser } from './api';
 import type { User } from './types';
+
+const CURRENT_USER_ID = 'u1';
 
 interface AuthContextValue {
   user: User | null;
@@ -16,21 +18,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   async function login(_email: string, _password: string) {
-    // Fake delay
-    await new Promise((r) => setTimeout(r, 500));
-    setUser(getUserById(CURRENT_USER_ID)!);
+    const u = await fetchUser(CURRENT_USER_ID);
+    if (u) setUser(u);
   }
 
   async function signup(email: string, _password: string, username: string) {
-    await new Promise((r) => setTimeout(r, 500));
-    const newUser: User = {
-      id: `u${users.length + 1}`,
-      username,
-      email,
-      joinedAt: new Date().toISOString(),
-    };
-    users.push(newUser);
-    setUser(newUser);
+    const u = await createUser({ username, email });
+    setUser(u);
   }
 
   function logout() {

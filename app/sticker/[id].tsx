@@ -1,14 +1,30 @@
 import { Image } from 'expo-image';
 import { Link, useLocalSearchParams } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { StickerMap } from '@/components/sticker-map';
 import { ThemedText } from '@/components/themed-text';
-import { getDesignById, getStickerById, getUserById } from '@/lib/mock-data';
+import { fetchSticker } from '@/lib/api';
+import type { Sticker } from '@/lib/types';
+
+type StickerDetail = Sticker & { designName?: string; username?: string };
 
 export default function StickerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const sticker = getStickerById(id);
+  const [sticker, setSticker] = useState<StickerDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchSticker(id).then((s) => {
+      setSticker(s);
+      setLoading(false);
+    });
+  }, [id]);
+
+  if (loading) {
+    return <View style={styles.center}><ActivityIndicator /></View>;
+  }
 
   if (!sticker) {
     return (
@@ -18,29 +34,27 @@ export default function StickerDetailScreen() {
     );
   }
 
-  const design = getDesignById(sticker.designId);
-  const user = getUserById(sticker.userId);
   const date = new Date(sticker.loggedAt).toLocaleDateString();
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
       <Image source={sticker.photoUri} style={styles.photo} contentFit="cover" />
 
-      {design && (
-        <Link href={`/design/${design.id}`} asChild>
+      {sticker.designName && (
+        <Link href={`/design/${sticker.designId}`} asChild>
           <Pressable>
             <ThemedText type="link" style={styles.link}>
-              Design: {design.name}
+              Design: {sticker.designName}
             </ThemedText>
           </Pressable>
         </Link>
       )}
 
-      {user && (
-        <Link href={`/user/${user.id}`} asChild>
+      {sticker.username && (
+        <Link href={`/user/${sticker.userId}`} asChild>
           <Pressable>
             <ThemedText type="link" style={styles.link}>
-              Logged by {user.username}
+              Logged by {sticker.username}
             </ThemedText>
           </Pressable>
         </Link>
