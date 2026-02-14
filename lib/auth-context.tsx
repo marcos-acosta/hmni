@@ -1,14 +1,13 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
-import { fetchUser, createUser } from './api';
+import { apiGetMe, apiLogin, apiSignup, clearAuthToken, loadAuthToken, setAuthToken } from './api';
 import type { User } from './types';
-
-const CURRENT_USER_ID = 'u1';
 
 interface AuthContextValue {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, username: string) => Promise<void>;
+  isLoading: boolean;
+  login: (username: string, password: string) => Promise<void>;
+  signup: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -16,23 +15,43 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  async function login(_email: string, _password: string) {
-    const u = await fetchUser(CURRENT_USER_ID);
-    if (u) setUser(u);
-  }
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await loadAuthToken();
+        if (token) {
+          const me = await apiGetMe();
+          setUser(me);
+        }
+      } catch {
+        await clearAuthToken();
+      } finally {
+        setIsLoading(false);
+      }
+    })();
+  }, []);
 
-  async function signup(email: string, _password: string, username: string) {
-    const u = await createUser({ username, email });
+  async function login(username: string, password: string) {
+    const { token, user: u } = await apiLogin(username, password);
+    await setAuthToken(token);
     setUser(u);
   }
 
-  function logout() {
+  async function signup(username: string, email: string, password: string) {
+    const { token, user: u } = await apiSignup(username, email, password);
+    await setAuthToken(token);
+    setUser(u);
+  }
+
+  async function logout() {
+    await clearAuthToken();
     setUser(null);
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

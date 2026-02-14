@@ -13,6 +13,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { signup } = useAuth();
   const textColor = useThemeColor({}, 'text');
 
@@ -21,9 +22,12 @@ export default function SignupScreen() {
   async function handleSignup() {
     if (!valid) return;
     setLoading(true);
+    setError('');
     try {
-      await signup(email, password, username);
+      await signup(username, email, password);
       router.replace('/(tabs)');
+    } catch (e: any) {
+      setError(e.message || 'Signup failed');
     } finally {
       setLoading(false);
     }
@@ -34,6 +38,8 @@ export default function SignupScreen() {
       <ThemedText type="title" style={styles.heading}>
         Create Account
       </ThemedText>
+
+      {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
 
       <TextInput
         style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
@@ -97,6 +103,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonDisabled: { opacity: 0.4 },
+  error: { color: '#e53e3e', textAlign: 'center', marginBottom: 12 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   switchLink: { alignItems: 'center', marginTop: 20 },
 });

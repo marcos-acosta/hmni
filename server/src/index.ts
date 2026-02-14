@@ -1,12 +1,20 @@
-import { Hono } from 'hono';
+import { Hono, type MiddlewareHandler } from 'hono';
 import { cors } from 'hono/cors';
+import { sign, verify } from 'hono/jwt';
+import { hashPassword, verifyPassword } from './password';
 
 type Bindings = {
   hmni_db: D1Database;
   hmni_photos: R2Bucket;
+  JWT_SECRET: string;
 };
 
-const app = new Hono<{ Bindings: Bindings }>();
+type Variables = {
+  userId: string;
+  username: string;
+};
+
+const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
 app.use('*', cors());
 app.use('*', async (c, next) => {
@@ -14,9 +22,88 @@ app.use('*', async (c, next) => {
   c.header('Cache-Control', 'no-store');
 });
 
+// ---------- Auth middleware ----------
+
+const authMiddleware: MiddlewareHandler<{ Bindings: Bindings; Variables: Variables }> = async (c, next) => {
+  const header = c.req.header('Authorization');
+  if (!header?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  try {
+    const payload = await verify(header.slice(7), c.env.JWT_SECRET, 'HS256');
+    c.set('userId', payload.sub as string);
+    c.set('username', payload.username as string);
+    await next();
+  } catch {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+};
+
+function makeToken(c: { env: Bindings }, user: { id: string; username: string }) {
+  return sign({ sub: user.id, username: user.username, exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 }, c.env.JWT_SECRET, 'HS256');
+}
+
+// ---------- Auth routes ----------
+
+app.post('/auth/signup', async (c) => {
+  const body = await c.req.json<{ username: string; email: string; password: string }>();
+  if (!body.username || !body.email || !body.password) {
+    return c.json({ error: 'username, email, and password are required' }, 400);
+  }
+  const existing = await c.env.hmni_db.prepare('SELECT id FROM users WHERE username = ?').bind(body.username).first();
+  if (existing) {
+    return c.json({ error: 'Username already taken' }, 409);
+  }
+  const id = `u${Date.now()}`;
+  const passwordHash = await hashPassword(body.password);
+  await c.env.hmni_db.prepare(
+    'INSERT INTO users (id, username, email, password_hash) VALUES (?, ?, ?, ?)'
+  ).bind(id, body.username, body.email, passwordHash).run();
+  const user = await c.env.hmni_db.prepare('SELECT id, username, email, joined_at FROM users WHERE id = ?').bind(id).first();
+  const token = await makeToken(c, { id, username: body.username });
+  return c.json({ token, user }, 201);
+});
+
+app.post('/auth/login', async (c) => {
+  const body = await c.req.json<{ username: string; password: string }>();
+  if (!body.username || !body.password) {
+    return c.json({ error: 'username and password are required' }, 400);
+  }
+  const row = await c.env.hmni_db.prepare(
+    'SELECT id, username, email, password_hash, joined_at FROM users WHERE username = ?'
+  ).bind(body.username).first<{ id: string; username: string; email: string; password_hash: string; joined_at: string }>();
+  if (!row) {
+    return c.json({ error: 'Invalid username or password' }, 401);
+  }
+  const valid = await verifyPassword(body.password, row.password_hash);
+  if (!valid) {
+    return c.json({ error: 'Invalid username or password' }, 401);
+  }
+  const token = await makeToken(c, row);
+  const { password_hash: _, ...user } = row;
+  return c.json({ token, user });
+});
+
+app.get('/auth/me', async (c) => {
+  const header = c.req.header('Authorization');
+  if (!header?.startsWith('Bearer ')) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+  try {
+    const payload = await verify(header.slice(7), c.env.JWT_SECRET, 'HS256');
+    const user = await c.env.hmni_db.prepare(
+      'SELECT id, username, email, joined_at FROM users WHERE id = ?'
+    ).bind(payload.sub).first();
+    if (!user) return c.json({ error: 'User not found' }, 404);
+    return c.json(user);
+  } catch {
+    return c.json({ error: 'Invalid token' }, 401);
+  }
+});
+
 // ---------- Photos ----------
 
-app.post('/photos', async (c) => {
+app.post('/photos', authMiddleware, async (c) => {
   const formData = await c.req.formData();
   const file = formData.get('photo');
   const blob = file as unknown as File;
@@ -91,18 +178,18 @@ app.get('/designs/:id/sightings', async (c) => {
   return c.json(results);
 });
 
-app.post('/designs', async (c) => {
+app.post('/designs', authMiddleware, async (c) => {
   const body = await c.req.json<{
     name: string;
     description?: string;
     text?: string;
     imageUrl?: string;
-    creatorId: string;
   }>();
   const id = `d${Date.now()}`;
+  const creatorId = c.get('userId');
   await c.env.hmni_db.prepare(
     'INSERT INTO designs (id, name, description, text, image_url, creator_id) VALUES (?, ?, ?, ?, ?, ?)'
-  ).bind(id, body.name, body.description ?? '', body.text ?? '', body.imageUrl ?? '', body.creatorId).run();
+  ).bind(id, body.name, body.description ?? '', body.text ?? '', body.imageUrl ?? '', creatorId).run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM designs WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });
@@ -122,7 +209,7 @@ app.get('/users/search', async (c) => {
 
 app.get('/users/:id', async (c) => {
   const row = await c.env.hmni_db.prepare(
-    'SELECT * FROM users WHERE id = ?'
+    'SELECT id, username, email, joined_at FROM users WHERE id = ?'
   ).bind(c.req.param('id')).first();
   if (!row) return c.json({ error: 'Not found' }, 404);
   return c.json(row);
@@ -144,19 +231,6 @@ app.get('/users/:id/designs', async (c) => {
     'SELECT * FROM designs WHERE creator_id = ? ORDER BY created_at DESC'
   ).bind(c.req.param('id')).all();
   return c.json(results);
-});
-
-app.post('/users', async (c) => {
-  const body = await c.req.json<{
-    username: string;
-    email: string;
-  }>();
-  const id = `u${Date.now()}`;
-  await c.env.hmni_db.prepare(
-    'INSERT INTO users (id, username, email) VALUES (?, ?, ?)'
-  ).bind(id, body.username, body.email).run();
-  const row = await c.env.hmni_db.prepare('SELECT * FROM users WHERE id = ?').bind(id).first();
-  return c.json(row, 201);
 });
 
 // ---------- Stickers ----------
@@ -189,7 +263,7 @@ app.get('/stickers/:id', async (c) => {
   return c.json({ ...sticker, sightings });
 });
 
-app.post('/stickers', async (c) => {
+app.post('/stickers', authMiddleware, async (c) => {
   const body = await c.req.json<{
     designId: string;
     latitude: number;
@@ -207,20 +281,20 @@ app.post('/stickers', async (c) => {
 
 // ---------- Sightings ----------
 
-app.post('/sightings', async (c) => {
+app.post('/sightings', authMiddleware, async (c) => {
   const body = await c.req.json<{
     stickerId: string;
     designId: string;
-    userId: string;
     photoUri?: string;
     locationDescription?: string;
     note?: string;
   }>();
   const id = `si${Date.now()}`;
+  const userId = c.get('userId');
   await c.env.hmni_db.prepare(
     `INSERT INTO sightings (id, sticker_id, design_id, user_id, photo_uri, location_description, note)
      VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, body.stickerId, body.designId, body.userId, body.photoUri ?? '', body.locationDescription ?? '', body.note ?? '').run();
+  ).bind(id, body.stickerId, body.designId, userId, body.photoUri ?? '', body.locationDescription ?? '', body.note ?? '').run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM sightings WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });

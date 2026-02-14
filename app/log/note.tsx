@@ -28,7 +28,7 @@ export default function NoteScreen() {
     if (!user || submitting) return;
     setSubmitting(true);
     try {
-      const { stickerId } = await submit(user.id);
+      const { stickerId } = await submit();
       router.dismissAll();
       router.push(`/sticker/${stickerId}`);
     } finally {

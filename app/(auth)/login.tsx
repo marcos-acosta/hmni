@@ -9,18 +9,22 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login } = useAuth();
   const textColor = useThemeColor({}, 'text');
 
   async function handleLogin() {
-    if (!email || !password) return;
+    if (!username || !password) return;
     setLoading(true);
+    setError('');
     try {
-      await login(email, password);
+      await login(username, password);
       router.replace('/(tabs)');
+    } catch (e: any) {
+      setError(e.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -31,16 +35,17 @@ export default function LoginScreen() {
       <ThemedText type="title" style={styles.heading}>
         HMNI
       </ThemedText>
-      <ThemedText style={styles.subtitle}>Hit Me Next Invitational</ThemedText>
+      <ThemedText style={styles.subtitle}>Hello My Name Is</ThemedText>
+
+      {error ? <ThemedText style={styles.error}>{error}</ThemedText> : null}
 
       <TextInput
         style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
-        placeholder="Email"
+        placeholder="Username"
         placeholderTextColor={textColor + '66'}
-        value={email}
-        onChangeText={setEmail}
+        value={username}
+        onChangeText={setUsername}
         autoCapitalize="none"
-        keyboardType="email-address"
       />
       <TextInput
         style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
@@ -52,9 +57,9 @@ export default function LoginScreen() {
       />
 
       <Pressable
-        style={[styles.button, (!email || !password || loading) && styles.buttonDisabled]}
+        style={[styles.button, (!username || !password || loading) && styles.buttonDisabled]}
         onPress={handleLogin}
-        disabled={!email || !password || loading}>
+        disabled={!username || !password || loading}>
         <ThemedText style={styles.buttonText}>
           {loading ? 'Logging in...' : 'Log In'}
         </ThemedText>
@@ -88,6 +93,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   buttonDisabled: { opacity: 0.4 },
+  error: { color: '#e53e3e', textAlign: 'center', marginBottom: 12 },
   buttonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   switchLink: { alignItems: 'center', marginTop: 20 },
 });

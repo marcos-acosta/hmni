@@ -62,7 +62,8 @@
         {
           "cameraPermission": "HMNI needs camera access to photograph stickers."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

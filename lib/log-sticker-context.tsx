@@ -22,7 +22,7 @@ interface LogStickerContextValue extends LogStickerState {
   setStickerId: (id: string) => void;
   setLocationDescription: (locationDescription: string) => void;
   setNote: (note: string) => void;
-  submit: (userId: string) => Promise<{ stickerId: string }>;
+  submit: () => Promise<{ stickerId: string }>;
   reset: () => void;
 }
 
@@ -68,7 +68,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, note }));
   }
 
-  async function submit(userId: string): Promise<{ stickerId: string }> {
+  async function submit(): Promise<{ stickerId: string }> {
     // Upload photo to R2
     let photoUrl = '';
     if (state.photoUri) {
@@ -83,7 +83,6 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
         description: state.newDesignDescription || '',
         text: state.newDesignText || '',
         imageUrl: photoUrl || 'https://picsum.photos/seed/new/400/400',
-        creatorId: userId,
       });
       designId = design.id;
     }
@@ -103,7 +102,6 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
     await createSighting({
       stickerId,
       designId: designId!,
-      userId,
       photoUri: photoUrl,
       locationDescription: state.locationDescription,
       note: state.note,

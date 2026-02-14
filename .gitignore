@@ -32,6 +32,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.dev.vars
 
 # typescript
 *.tsbuildinfo
@@ -50,3 +51,9 @@ docs
 
 # VSCode
 .vscode
+
+# scripts
+server/scripts
+
+# mock data
+server/seed.sql

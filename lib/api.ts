@@ -1,12 +1,75 @@
+import * as SecureStore from 'expo-secure-store';
+
 import type { Design, Sighting, Sticker, User } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
+const TOKEN_KEY = 'auth_token';
+
+let authToken: string | null = null;
+
+export async function setAuthToken(token: string) {
+  authToken = token;
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
+}
+
+export async function loadAuthToken(): Promise<string | null> {
+  authToken = await SecureStore.getItemAsync(TOKEN_KEY);
+  return authToken;
+}
+
+export async function clearAuthToken() {
+  authToken = null;
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
+}
+
+function authHeaders(): Record<string, string> {
+  if (!authToken) return {};
+  return { Authorization: `Bearer ${authToken}` };
+}
+
+// ---------- Auth ----------
+
+export async function apiLogin(username: string, password: string): Promise<{ token: string; user: User }> {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Login failed');
+  }
+  const data = await res.json();
+  return { token: data.token, user: toUser(data.user) };
+}
+
+export async function apiSignup(username: string, email: string, password: string): Promise<{ token: string; user: User }> {
+  const res = await fetch(`${BASE_URL}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    throw new Error(data.error || 'Signup failed');
+  }
+  const data = await res.json();
+  return { token: data.token, user: toUser(data.user) };
+}
+
+export async function apiGetMe(): Promise<User> {
+  const res = await fetch(`${BASE_URL}/auth/me`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error('Session expired');
+  const row: UserRow = await res.json();
+  return toUser(row);
+}
 
 // ---------- Photos ----------
 
 export async function uploadPhoto(localUri: string): Promise<string> {
   const formData = new FormData();
-  // React Native's FormData accepts this shape for file uploads
   formData.append('photo', {
     uri: localUri,
     type: 'image/jpeg',
@@ -15,6 +78,7 @@ export async function uploadPhoto(localUri: string): Promise<string> {
 
   const res = await fetch(`${BASE_URL}/photos`, {
     method: 'POST',
+    headers: authHeaders(),
     body: formData,
   });
   const data: { url: string } = await res.json();
@@ -171,11 +235,10 @@ export async function createDesign(body: {
   description?: string;
   text?: string;
   imageUrl?: string;
-  creatorId: string;
 }) {
   const res = await fetch(`${BASE_URL}/designs`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   const row: DesignRow = await res.json();
@@ -209,16 +272,6 @@ export async function searchUsersApi(query: string) {
   return rows.map(toUser);
 }
 
-export async function createUser(body: { username: string; email: string }) {
-  const res = await fetch(`${BASE_URL}/users`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const row: UserRow = await res.json();
-  return toUser(row);
-}
-
 // ---------- Stickers ----------
 
 export async function fetchStickers() {
@@ -246,7 +299,7 @@ export async function createSticker(body: {
 }) {
   const res = await fetch(`${BASE_URL}/stickers`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   const row: StickerRow = await res.json();
@@ -258,14 +311,13 @@ export async function createSticker(body: {
 export async function createSighting(body: {
   stickerId: string;
   designId: string;
-  userId: string;
   photoUri?: string;
   locationDescription?: string;
   note?: string;
 }) {
   const res = await fetch(`${BASE_URL}/sightings`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   const row: SightingRow = await res.json();
