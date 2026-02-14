@@ -9,15 +9,18 @@ interface LogStickerState {
   designId: string | null;
   newDesignName: string | null;
   newDesignDescription: string | null;
+  newDesignText: string | null;
   stickerId: string | null;
+  locationDescription: string;
   note: string;
 }
 
 interface LogStickerContextValue extends LogStickerState {
   setPhoto: (uri: string, lat: number, lng: number) => void;
   setDesignId: (id: string) => void;
-  setNewDesign: (name: string, description: string) => void;
+  setNewDesign: (name: string, description: string, text: string) => void;
   setStickerId: (id: string) => void;
+  setLocationDescription: (locationDescription: string) => void;
   setNote: (note: string) => void;
   submit: (userId: string) => Promise<{ stickerId: string }>;
   reset: () => void;
@@ -30,7 +33,9 @@ const initial: LogStickerState = {
   designId: null,
   newDesignName: null,
   newDesignDescription: null,
+  newDesignText: null,
   stickerId: null,
+  locationDescription: '',
   note: '',
 };
 
@@ -44,15 +49,19 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
   }
 
   function setDesignId(id: string) {
-    setState((s) => ({ ...s, designId: id, newDesignName: null, newDesignDescription: null }));
+    setState((s) => ({ ...s, designId: id, newDesignName: null, newDesignDescription: null, newDesignText: null }));
   }
 
-  function setNewDesign(name: string, description: string) {
-    setState((s) => ({ ...s, designId: null, newDesignName: name, newDesignDescription: description }));
+  function setNewDesign(name: string, description: string, text: string) {
+    setState((s) => ({ ...s, designId: null, newDesignName: name, newDesignDescription: description, newDesignText: text }));
   }
 
   function setStickerId(id: string) {
     setState((s) => ({ ...s, stickerId: id }));
+  }
+
+  function setLocationDescription(locationDescription: string) {
+    setState((s) => ({ ...s, locationDescription }));
   }
 
   function setNote(note: string) {
@@ -72,6 +81,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
       const design = await createDesign({
         name: state.newDesignName,
         description: state.newDesignDescription || '',
+        text: state.newDesignText || '',
         imageUrl: photoUrl || 'https://picsum.photos/seed/new/400/400',
         creatorId: userId,
       });
@@ -95,6 +105,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
       designId: designId!,
       userId,
       photoUri: photoUrl,
+      locationDescription: state.locationDescription,
       note: state.note,
     });
 
@@ -108,7 +119,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
 
   return (
     <LogStickerContext.Provider
-      value={{ ...state, setPhoto, setDesignId, setNewDesign, setStickerId, setNote, submit, reset }}>
+      value={{ ...state, setPhoto, setDesignId, setNewDesign, setStickerId, setLocationDescription, setNote, submit, reset }}>
       {children}
     </LogStickerContext.Provider>
   );

@@ -54,7 +54,7 @@ app.get('/designs/search', async (c) => {
   if (!q) return c.json([]);
   const like = `%${q}%`;
   const { results } = await c.env.hmni_db.prepare(
-    'SELECT * FROM designs WHERE name LIKE ?1 OR description LIKE ?1 ORDER BY created_at DESC'
+    'SELECT * FROM designs WHERE name LIKE ?1 OR description LIKE ?1 OR text LIKE ?1 ORDER BY created_at DESC'
   ).bind(like).all();
   return c.json(results);
 });
@@ -95,13 +95,14 @@ app.post('/designs', async (c) => {
   const body = await c.req.json<{
     name: string;
     description?: string;
+    text?: string;
     imageUrl?: string;
     creatorId: string;
   }>();
   const id = `d${Date.now()}`;
   await c.env.hmni_db.prepare(
-    'INSERT INTO designs (id, name, description, image_url, creator_id) VALUES (?, ?, ?, ?, ?)'
-  ).bind(id, body.name, body.description ?? '', body.imageUrl ?? '', body.creatorId).run();
+    'INSERT INTO designs (id, name, description, text, image_url, creator_id) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(id, body.name, body.description ?? '', body.text ?? '', body.imageUrl ?? '', body.creatorId).run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM designs WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });
@@ -212,13 +213,14 @@ app.post('/sightings', async (c) => {
     designId: string;
     userId: string;
     photoUri?: string;
+    locationDescription?: string;
     note?: string;
   }>();
   const id = `si${Date.now()}`;
   await c.env.hmni_db.prepare(
-    `INSERT INTO sightings (id, sticker_id, design_id, user_id, photo_uri, note)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(id, body.stickerId, body.designId, body.userId, body.photoUri ?? '', body.note ?? '').run();
+    `INSERT INTO sightings (id, sticker_id, design_id, user_id, photo_uri, location_description, note)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, body.stickerId, body.designId, body.userId, body.photoUri ?? '', body.locationDescription ?? '', body.note ?? '').run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM sightings WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });

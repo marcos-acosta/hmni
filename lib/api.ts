@@ -27,6 +27,7 @@ interface DesignRow {
   id: string;
   name: string;
   description: string;
+  text: string;
   image_url: string;
   creator_id: string;
   created_at: string;
@@ -51,6 +52,7 @@ interface SightingRow {
   design_id: string;
   user_id: string;
   photo_uri: string;
+  location_description: string;
   note: string;
   logged_at: string;
   username?: string;
@@ -75,6 +77,7 @@ function toDesign(r: DesignRow): Design & { creatorUsername?: string } {
     id: r.id,
     name: r.name,
     description: r.description,
+    text: r.text,
     imageUrl: r.image_url,
     creatorId: r.creator_id,
     createdAt: r.created_at,
@@ -109,6 +112,7 @@ function toSighting(r: SightingRow): Sighting & {
     designId: r.design_id,
     userId: r.user_id,
     photoUri: r.photo_uri,
+    locationDescription: r.location_description,
     note: r.note,
     loggedAt: r.logged_at,
     username: r.username,
@@ -165,6 +169,7 @@ export async function searchDesignsApi(query: string) {
 export async function createDesign(body: {
   name: string;
   description?: string;
+  text?: string;
   imageUrl?: string;
   creatorId: string;
 }) {
@@ -255,6 +260,7 @@ export async function createSighting(body: {
   designId: string;
   userId: string;
   photoUri?: string;
+  locationDescription?: string;
   note?: string;
 }) {
   const res = await fetch(`${BASE_URL}/sightings`, {

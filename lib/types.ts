@@ -9,6 +9,7 @@ export interface Design {
   id: string;
   name: string;
   description: string;
+  text: string;
   imageUrl: string; // placeholder URL
   creatorId: string;
   createdAt: string; // ISO date
@@ -29,6 +30,7 @@ export interface Sighting {
   designId: string;
   userId: string;
   photoUri: string;
+  locationDescription: string;
   note: string;
   loggedAt: string; // ISO date
 }

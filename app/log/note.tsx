@@ -10,7 +10,7 @@ import { useLogSticker } from '@/lib/log-sticker-context';
 import { fetchDesign } from '@/lib/api';
 
 export default function NoteScreen() {
-  const { photoUri, designId, newDesignName, note, setNote, submit } = useLogSticker();
+  const { photoUri, designId, newDesignName, locationDescription, setLocationDescription, note, setNote, submit } = useLogSticker();
   const { user } = useAuth();
   const textColor = useThemeColor({}, 'text');
   const [designLabel, setDesignLabel] = useState(newDesignName ?? 'New Design');
@@ -48,11 +48,22 @@ export default function NoteScreen() {
       </View>
 
       <ThemedText type="subtitle" style={styles.label}>
-        Note (optional)
+        Location Description
+      </ThemedText>
+      <TextInput
+        style={[styles.input, styles.singleLine, { color: textColor, borderColor: textColor + '33' }]}
+        placeholder="e.g. on a dumpster, on a lamp post"
+        placeholderTextColor={textColor + '66'}
+        value={locationDescription}
+        onChangeText={setLocationDescription}
+      />
+
+      <ThemedText type="subtitle" style={styles.label}>
+        Notes (optional)
       </ThemedText>
       <TextInput
         style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
-        placeholder="Where did you spot this? Any context?"
+        placeholder="Any additional context?"
         placeholderTextColor={textColor + '66'}
         value={note}
         onChangeText={setNote}
@@ -80,6 +91,9 @@ const styles = StyleSheet.create({
   summaryInfo: { flex: 1, justifyContent: 'center' },
   designLabel: { fontWeight: '600', fontSize: 16 },
   label: { marginBottom: 6 },
+  singleLine: {
+    minHeight: 0,
+  },
   input: {
     borderWidth: 1,
     borderRadius: 8,

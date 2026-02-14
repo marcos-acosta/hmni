@@ -51,6 +51,9 @@ export default function DesignDetailScreen() {
       <View style={styles.info}>
         <ThemedText type="title">{design.name}</ThemedText>
         <ThemedText style={styles.description}>{design.description}</ThemedText>
+        {design.text ? (
+          <ThemedText style={styles.designText}>{design.text}</ThemedText>
+        ) : null}
         {design.creatorUsername && (
           <Link href={`/user/${design.creatorId}`} asChild>
             <Pressable>
@@ -101,7 +104,8 @@ const styles = StyleSheet.create({
   scroll: { paddingBottom: 32 },
   heroImage: { width: '100%', height: 250 },
   info: { padding: 16 },
-  description: { marginTop: 4, marginBottom: 8, opacity: 0.7 },
+  description: { marginTop: 4, marginBottom: 4, opacity: 0.7 },
+  designText: { marginBottom: 8, fontWeight: '600', opacity: 0.8 },
   sectionTitle: { paddingHorizontal: 16, marginTop: 16, marginBottom: 8 },
   gallery: { paddingHorizontal: 16 },
   stickerCard: { width: 140, marginRight: 10 },

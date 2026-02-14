@@ -47,3 +47,6 @@ docs
 
 # Cloudflare
 *.wrangler
+
+# VSCode
+.vscode

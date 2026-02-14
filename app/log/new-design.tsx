@@ -8,13 +8,14 @@ import { useLogSticker } from '@/lib/log-sticker-context';
 
 export default function NewDesignScreen() {
   const [name, setName] = useState('');
+  const [text, setText] = useState('');
   const [description, setDescription] = useState('');
   const { setNewDesign } = useLogSticker();
   const textColor = useThemeColor({}, 'text');
 
   function handleNext() {
     if (!name.trim()) return;
-    setNewDesign(name.trim(), description.trim());
+    setNewDesign(name.trim(), description.trim(), text.trim());
     router.push('/log/note');
   }
 
@@ -29,6 +30,17 @@ export default function NewDesignScreen() {
         placeholderTextColor={textColor + '66'}
         value={name}
         onChangeText={setName}
+      />
+
+      <ThemedText type="subtitle" style={styles.label}>
+        Text
+      </ThemedText>
+      <TextInput
+        style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
+        placeholder="Words on the sticker, e.g. OBEY"
+        placeholderTextColor={textColor + '66'}
+        value={text}
+        onChangeText={setText}
       />
 
       <ThemedText type="subtitle" style={styles.label}>

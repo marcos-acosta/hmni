@@ -84,6 +84,9 @@ export default function StickerDetailScreen() {
                 </Pressable>
               </Link>
             )}
+            {sighting.locationDescription ? (
+              <ThemedText style={styles.sightingLocation}>{sighting.locationDescription}</ThemedText>
+            ) : null}
             {sighting.note ? (
               <ThemedText style={styles.sightingNote}>{sighting.note}</ThemedText>
             ) : null}
@@ -113,6 +116,7 @@ const styles = StyleSheet.create({
   sightingPhoto: { width: 80, height: 80, borderRadius: 8 },
   sightingInfo: { flex: 1, justifyContent: 'center' },
   sightingUser: { fontWeight: '600', marginBottom: 2 },
+  sightingLocation: { opacity: 0.7, marginBottom: 2 },
   sightingNote: { fontStyle: 'italic', opacity: 0.7, marginBottom: 2 },
   sightingDate: { opacity: 0.5, fontSize: 13 },
 });
