@@ -10,7 +10,7 @@ import { useLogSticker } from '@/lib/log-sticker-context';
 import { fetchDesign } from '@/lib/api';
 
 export default function NoteScreen() {
-  const { photoUri, designId, newDesignName, locationDescription, setLocationDescription, note, setNote, submit } = useLogSticker();
+  const { photoUri, designId, newDesignName, stickerId, locationDescription, setLocationDescription, note, setNote, submit } = useLogSticker();
   const { user } = useAuth();
   const textColor = useThemeColor({}, 'text');
   const [designLabel, setDesignLabel] = useState(newDesignName ?? 'New Design');
@@ -47,16 +47,20 @@ export default function NoteScreen() {
         </View>
       </View>
 
-      <ThemedText type="subtitle" style={styles.label}>
-        Location Description
-      </ThemedText>
-      <TextInput
-        style={[styles.input, styles.singleLine, { color: textColor, borderColor: textColor + '33' }]}
-        placeholder="e.g. on a dumpster, on a lamp post"
-        placeholderTextColor={textColor + '66'}
-        value={locationDescription}
-        onChangeText={setLocationDescription}
-      />
+      {!stickerId && (
+        <>
+          <ThemedText type="subtitle" style={styles.label}>
+            Location Description
+          </ThemedText>
+          <TextInput
+            style={[styles.input, styles.singleLine, { color: textColor, borderColor: textColor + '33' }]}
+            placeholder="e.g. on a dumpster, on a lamp post"
+            placeholderTextColor={textColor + '66'}
+            value={locationDescription}
+            onChangeText={setLocationDescription}
+          />
+        </>
+      )}
 
       <ThemedText type="subtitle" style={styles.label}>
         Notes (optional)

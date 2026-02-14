@@ -94,7 +94,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
         designId: designId!,
         latitude: state.latitude || 0,
         longitude: state.longitude || 0,
-        locationName: 'Logged location',
+        locationDescription: state.locationDescription,
       });
       stickerId = sticker.id;
     }
@@ -103,7 +103,6 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
       stickerId,
       designId: designId!,
       photoUri: photoUrl,
-      locationDescription: state.locationDescription,
       note: state.note,
     });
 

@@ -168,7 +168,7 @@ app.get('/designs/:id/stickers', async (c) => {
 
 app.get('/designs/:id/sightings', async (c) => {
   const { results } = await c.env.hmni_db.prepare(
-    `SELECT si.*, u.username, s.location_name, s.latitude, s.longitude, d.name AS design_name
+    `SELECT si.*, u.username, s.latitude, s.longitude, d.name AS design_name
      FROM sightings si
      LEFT JOIN users u ON si.user_id = u.id
      LEFT JOIN stickers s ON si.sticker_id = s.id
@@ -217,7 +217,7 @@ app.get('/users/:id', async (c) => {
 
 app.get('/users/:id/sightings', async (c) => {
   const { results } = await c.env.hmni_db.prepare(
-    `SELECT si.*, s.location_name, s.latitude, s.longitude, d.name AS design_name
+    `SELECT si.*, s.latitude, s.longitude, d.name AS design_name
      FROM sightings si
      LEFT JOIN stickers s ON si.sticker_id = s.id
      LEFT JOIN designs d ON si.design_id = d.id
@@ -268,13 +268,13 @@ app.post('/stickers', authMiddleware, async (c) => {
     designId: string;
     latitude: number;
     longitude: number;
-    locationName?: string;
+    locationDescription?: string;
   }>();
   const id = `s${Date.now()}`;
   await c.env.hmni_db.prepare(
-    `INSERT INTO stickers (id, design_id, latitude, longitude, location_name)
+    `INSERT INTO stickers (id, design_id, latitude, longitude, location_description)
      VALUES (?, ?, ?, ?, ?)`
-  ).bind(id, body.designId, body.latitude, body.longitude, body.locationName ?? '').run();
+  ).bind(id, body.designId, body.latitude, body.longitude, body.locationDescription ?? '').run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM stickers WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });
@@ -286,15 +286,14 @@ app.post('/sightings', authMiddleware, async (c) => {
     stickerId: string;
     designId: string;
     photoUri?: string;
-    locationDescription?: string;
     note?: string;
   }>();
   const id = `si${Date.now()}`;
   const userId = c.get('userId');
   await c.env.hmni_db.prepare(
-    `INSERT INTO sightings (id, sticker_id, design_id, user_id, photo_uri, location_description, note)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, body.stickerId, body.designId, userId, body.photoUri ?? '', body.locationDescription ?? '', body.note ?? '').run();
+    `INSERT INTO sightings (id, sticker_id, design_id, user_id, photo_uri, note)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).bind(id, body.stickerId, body.designId, userId, body.photoUri ?? '', body.note ?? '').run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM sightings WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });

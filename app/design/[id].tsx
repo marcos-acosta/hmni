@@ -9,7 +9,7 @@ import { fetchDesign, fetchDesignStickers, fetchDesignSightings } from '@/lib/ap
 import type { Design, Sighting, Sticker } from '@/lib/types';
 
 type StickerWithPhoto = Sticker & { photoUri?: string };
-type SightingWithMeta = Sighting & { username?: string; locationName?: string };
+type SightingWithMeta = Sighting & { username?: string };
 
 export default function DesignDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

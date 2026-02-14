@@ -20,7 +20,7 @@ export interface Sticker {
   designId: string;
   latitude: number;
   longitude: number;
-  locationName: string;
+  locationDescription: string;
   createdAt: string; // ISO date
 }
 
@@ -30,7 +30,6 @@ export interface Sighting {
   designId: string;
   userId: string;
   photoUri: string;
-  locationDescription: string;
   note: string;
   loggedAt: string; // ISO date
 }

@@ -57,3 +57,6 @@ server/scripts
 
 # mock data
 server/seed.sql
+
+# migrations
+server/migrations

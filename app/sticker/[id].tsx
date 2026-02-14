@@ -55,7 +55,9 @@ export default function StickerDetailScreen() {
         </Link>
       )}
 
-      <ThemedText style={styles.location}>{sticker.locationName}</ThemedText>
+      {sticker.locationDescription ? (
+        <ThemedText style={styles.locationDescription}>{sticker.locationDescription}</ThemedText>
+      ) : null}
 
       <StickerMap
         stickers={[sticker]}
@@ -84,9 +86,6 @@ export default function StickerDetailScreen() {
                 </Pressable>
               </Link>
             )}
-            {sighting.locationDescription ? (
-              <ThemedText style={styles.sightingLocation}>{sighting.locationDescription}</ThemedText>
-            ) : null}
             {sighting.note ? (
               <ThemedText style={styles.sightingNote}>{sighting.note}</ThemedText>
             ) : null}
@@ -105,7 +104,7 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   photo: { width: '100%', height: 300, borderRadius: 12, marginBottom: 16 },
   link: { marginBottom: 8 },
-  location: { fontWeight: '600', marginBottom: 8 },
+  locationDescription: { fontWeight: '600', opacity: 0.7, marginBottom: 8 },
   map: { height: 180, borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
   sightingsTitle: { marginTop: 8, marginBottom: 12 },
   sightingCard: {
@@ -116,7 +115,6 @@ const styles = StyleSheet.create({
   sightingPhoto: { width: 80, height: 80, borderRadius: 8 },
   sightingInfo: { flex: 1, justifyContent: 'center' },
   sightingUser: { fontWeight: '600', marginBottom: 2 },
-  sightingLocation: { opacity: 0.7, marginBottom: 2 },
   sightingNote: { fontStyle: 'italic', opacity: 0.7, marginBottom: 2 },
   sightingDate: { opacity: 0.5, fontSize: 13 },
 });

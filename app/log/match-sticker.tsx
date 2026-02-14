@@ -95,7 +95,7 @@ export default function MatchStickerScreen() {
             <View style={[styles.cardImage, styles.placeholder]} />
           )}
           <View style={styles.cardInfo}>
-            <ThemedText style={styles.cardLocation}>{item.locationName}</ThemedText>
+            <ThemedText style={styles.cardLocation}>{item.locationDescription}</ThemedText>
             <ThemedText style={styles.cardCount}>
               {item.sightingCount ?? 1} sighting{(item.sightingCount ?? 1) !== 1 ? 's' : ''}
             </ThemedText>

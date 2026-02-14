@@ -103,7 +103,7 @@ interface StickerRow {
   design_id: string;
   latitude: number;
   longitude: number;
-  location_name: string;
+  location_description: string;
   created_at: string;
   photo_uri?: string;
   sighting_count?: number;
@@ -116,11 +116,9 @@ interface SightingRow {
   design_id: string;
   user_id: string;
   photo_uri: string;
-  location_description: string;
   note: string;
   logged_at: string;
   username?: string;
-  location_name?: string;
   latitude?: number;
   longitude?: number;
   design_name?: string;
@@ -155,7 +153,7 @@ function toSticker(r: StickerRow): Sticker & { photoUri?: string; sightingCount?
     designId: r.design_id,
     latitude: r.latitude,
     longitude: r.longitude,
-    locationName: r.location_name,
+    locationDescription: r.location_description,
     createdAt: r.created_at,
     photoUri: r.photo_uri,
     sightingCount: r.sighting_count,
@@ -165,7 +163,6 @@ function toSticker(r: StickerRow): Sticker & { photoUri?: string; sightingCount?
 
 function toSighting(r: SightingRow): Sighting & {
   username?: string;
-  locationName?: string;
   latitude?: number;
   longitude?: number;
   designName?: string;
@@ -176,11 +173,9 @@ function toSighting(r: SightingRow): Sighting & {
     designId: r.design_id,
     userId: r.user_id,
     photoUri: r.photo_uri,
-    locationDescription: r.location_description,
     note: r.note,
     loggedAt: r.logged_at,
     username: r.username,
-    locationName: r.location_name,
     latitude: r.latitude,
     longitude: r.longitude,
     designName: r.design_name,
@@ -295,7 +290,7 @@ export async function createSticker(body: {
   designId: string;
   latitude: number;
   longitude: number;
-  locationName?: string;
+  locationDescription?: string;
 }) {
   const res = await fetch(`${BASE_URL}/stickers`, {
     method: 'POST',
@@ -312,7 +307,6 @@ export async function createSighting(body: {
   stickerId: string;
   designId: string;
   photoUri?: string;
-  locationDescription?: string;
   note?: string;
 }) {
   const res = await fetch(`${BASE_URL}/sightings`, {
