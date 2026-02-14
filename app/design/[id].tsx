@@ -5,22 +5,27 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, View } 
 
 import { StickerMap } from '@/components/sticker-map';
 import { ThemedText } from '@/components/themed-text';
-import { fetchDesign, fetchDesignStickers } from '@/lib/api';
-import type { Design, Sticker } from '@/lib/types';
+import { fetchDesign, fetchDesignStickers, fetchDesignSightings } from '@/lib/api';
+import type { Design, Sighting, Sticker } from '@/lib/types';
+
+type StickerWithPhoto = Sticker & { photoUri?: string };
+type SightingWithMeta = Sighting & { username?: string; locationName?: string };
 
 export default function DesignDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [design, setDesign] = useState<(Design & { creatorUsername?: string }) | null>(null);
-  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [stickers, setStickers] = useState<StickerWithPhoto[]>([]);
+  const [sightings, setSightings] = useState<SightingWithMeta[]>([]);
   const [loading, setLoading] = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       let stale = false;
-      Promise.all([fetchDesign(id), fetchDesignStickers(id)]).then(([d, s]) => {
+      Promise.all([fetchDesign(id), fetchDesignStickers(id), fetchDesignSightings(id)]).then(([d, s, si]) => {
         if (!stale) {
           setDesign(d);
           setStickers(s);
+          setSightings(si);
           setLoading(false);
         }
       });
@@ -56,24 +61,24 @@ export default function DesignDetailScreen() {
       </View>
 
       <ThemedText type="subtitle" style={styles.sectionTitle}>
-        Spotted ({stickers.length})
+        Spotted ({sightings.length})
       </ThemedText>
 
-      {stickers.length > 0 ? (
+      {sightings.length > 0 ? (
         <>
           <FlatList
-            data={stickers}
+            data={sightings}
             keyExtractor={(s) => s.id}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.gallery}
             scrollEnabled
             renderItem={({ item }) => (
-              <Link href={`/sticker/${item.id}`} asChild>
+              <Link href={`/sticker/${item.stickerId}`} asChild>
                 <Pressable style={styles.stickerCard}>
                   <Image source={item.photoUri} style={styles.stickerImage} contentFit="cover" />
                   <ThemedText numberOfLines={1} style={styles.stickerLocation}>
-                    {item.locationName}
+                    {item.username}
                   </ThemedText>
                 </Pressable>
               </Link>

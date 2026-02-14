@@ -1,4 +1,4 @@
-import type { Design, Sticker, User } from './types';
+import type { Design, Sighting, Sticker, User } from './types';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8787';
 
@@ -36,15 +36,28 @@ interface DesignRow {
 interface StickerRow {
   id: string;
   design_id: string;
-  user_id: string;
-  photo_uri: string;
   latitude: number;
   longitude: number;
   location_name: string;
+  created_at: string;
+  photo_uri?: string;
+  sighting_count?: number;
+  design_name?: string;
+}
+
+interface SightingRow {
+  id: string;
+  sticker_id: string;
+  design_id: string;
+  user_id: string;
+  photo_uri: string;
   note: string;
   logged_at: string;
-  design_name?: string;
   username?: string;
+  location_name?: string;
+  latitude?: number;
+  longitude?: number;
+  design_name?: string;
 }
 
 interface UserRow {
@@ -52,7 +65,7 @@ interface UserRow {
   username: string;
   email: string;
   joined_at: string;
-  sticker_count?: number;
+  sighting_count?: number;
 }
 
 // ---------- Mappers ----------
@@ -69,29 +82,50 @@ function toDesign(r: DesignRow): Design & { creatorUsername?: string } {
   };
 }
 
-function toSticker(r: StickerRow): Sticker & { designName?: string; username?: string } {
+function toSticker(r: StickerRow): Sticker & { photoUri?: string; sightingCount?: number; designName?: string } {
   return {
     id: r.id,
     designId: r.design_id,
-    userId: r.user_id,
-    photoUri: r.photo_uri,
     latitude: r.latitude,
     longitude: r.longitude,
     locationName: r.location_name,
-    note: r.note,
-    loggedAt: r.logged_at,
+    createdAt: r.created_at,
+    photoUri: r.photo_uri,
+    sightingCount: r.sighting_count,
     designName: r.design_name,
-    username: r.username,
   };
 }
 
-function toUser(r: UserRow): User & { stickerCount?: number } {
+function toSighting(r: SightingRow): Sighting & {
+  username?: string;
+  locationName?: string;
+  latitude?: number;
+  longitude?: number;
+  designName?: string;
+} {
+  return {
+    id: r.id,
+    stickerId: r.sticker_id,
+    designId: r.design_id,
+    userId: r.user_id,
+    photoUri: r.photo_uri,
+    note: r.note,
+    loggedAt: r.logged_at,
+    username: r.username,
+    locationName: r.location_name,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    designName: r.design_name,
+  };
+}
+
+function toUser(r: UserRow): User & { sightingCount?: number } {
   return {
     id: r.id,
     username: r.username,
     email: r.email,
     joinedAt: r.joined_at,
-    stickerCount: r.sticker_count,
+    sightingCount: r.sighting_count,
   };
 }
 
@@ -114,6 +148,12 @@ export async function fetchDesignStickers(designId: string) {
   const res = await fetch(`${BASE_URL}/designs/${designId}/stickers`);
   const rows: StickerRow[] = await res.json();
   return rows.map(toSticker);
+}
+
+export async function fetchDesignSightings(designId: string) {
+  const res = await fetch(`${BASE_URL}/designs/${designId}/sightings`);
+  const rows: SightingRow[] = await res.json();
+  return rows.map(toSighting);
 }
 
 export async function searchDesignsApi(query: string) {
@@ -146,10 +186,10 @@ export async function fetchUser(id: string) {
   return toUser(row);
 }
 
-export async function fetchUserStickers(userId: string) {
-  const res = await fetch(`${BASE_URL}/users/${userId}/stickers`);
-  const rows: StickerRow[] = await res.json();
-  return rows.map(toSticker);
+export async function fetchUserSightings(userId: string) {
+  const res = await fetch(`${BASE_URL}/users/${userId}/sightings`);
+  const rows: SightingRow[] = await res.json();
+  return rows.map(toSighting);
 }
 
 export async function fetchUserDesigns(userId: string) {
@@ -185,18 +225,19 @@ export async function fetchStickers() {
 export async function fetchSticker(id: string) {
   const res = await fetch(`${BASE_URL}/stickers/${id}`);
   if (!res.ok) return null;
-  const row: StickerRow = await res.json();
-  return toSticker(row);
+  const data: StickerRow & { sightings: SightingRow[] } = await res.json();
+  const { sightings: sightingRows, ...stickerRow } = data;
+  return {
+    ...toSticker(stickerRow),
+    sightings: sightingRows.map(toSighting),
+  };
 }
 
 export async function createSticker(body: {
   designId: string;
-  userId: string;
-  photoUri?: string;
   latitude: number;
   longitude: number;
   locationName?: string;
-  note?: string;
 }) {
   const res = await fetch(`${BASE_URL}/stickers`, {
     method: 'POST',
@@ -205,4 +246,22 @@ export async function createSticker(body: {
   });
   const row: StickerRow = await res.json();
   return toSticker(row);
+}
+
+// ---------- Sightings ----------
+
+export async function createSighting(body: {
+  stickerId: string;
+  designId: string;
+  userId: string;
+  photoUri?: string;
+  note?: string;
+}) {
+  const res = await fetch(`${BASE_URL}/sightings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const row: SightingRow = await res.json();
+  return toSighting(row);
 }

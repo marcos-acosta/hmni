@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from '@/components/themed-text';
 import type { User } from '@/lib/types';
 
-export function UserCard({ user, stickerCount }: { user: User; stickerCount?: number }) {
-  const count = stickerCount ?? 0;
+export function UserCard({ user, sightingCount }: { user: User; sightingCount?: number }) {
+  const count = sightingCount ?? 0;
 
   return (
     <Link href={`/user/${user.id}`} asChild>
@@ -18,7 +18,7 @@ export function UserCard({ user, stickerCount }: { user: User; stickerCount?: nu
         <View style={styles.info}>
           <ThemedText style={styles.username}>{user.username}</ThemedText>
           <ThemedText style={styles.stats}>
-            {count} sticker{count !== 1 ? 's' : ''}
+            {count} sighting{count !== 1 ? 's' : ''}
           </ThemedText>
         </View>
       </Pressable>

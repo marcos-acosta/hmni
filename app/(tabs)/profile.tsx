@@ -7,13 +7,13 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { UserProfile } from '@/components/user-profile';
 import { useAuth } from '@/lib/auth-context';
-import { fetchUserStickers, fetchUserDesigns } from '@/lib/api';
-import type { Sticker } from '@/lib/types';
+import { fetchUserSightings, fetchUserDesigns } from '@/lib/api';
+import type { Sighting } from '@/lib/types';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const insets = useSafeAreaInsets();
-  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [sightings, setSightings] = useState<Sighting[]>([]);
   const [designCount, setDesignCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -21,9 +21,9 @@ export default function ProfileScreen() {
     useCallback(() => {
       if (!user) return;
       let stale = false;
-      Promise.all([fetchUserStickers(user.id), fetchUserDesigns(user.id)]).then(([s, d]) => {
+      Promise.all([fetchUserSightings(user.id), fetchUserDesigns(user.id)]).then(([s, d]) => {
         if (!stale) {
-          setStickers(s);
+          setSightings(s);
           setDesignCount(d.length);
           setLoading(false);
         }
@@ -46,7 +46,7 @@ export default function ProfileScreen() {
     <ThemedView style={[styles.container, { paddingTop: insets.top }]}>
       <UserProfile
         user={user}
-        stickers={stickers}
+        sightings={sightings}
         designCount={designCount}
         actions={
           <Pressable style={styles.logoutButton} onPress={logout}>

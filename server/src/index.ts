@@ -71,7 +71,22 @@ app.get('/designs/:id', async (c) => {
 
 app.get('/designs/:id/stickers', async (c) => {
   const { results } = await c.env.hmni_db.prepare(
-    'SELECT * FROM stickers WHERE design_id = ? ORDER BY logged_at DESC'
+    `SELECT s.*,
+       (SELECT si.photo_uri FROM sightings si WHERE si.sticker_id = s.id ORDER BY si.logged_at ASC LIMIT 1) AS photo_uri,
+       (SELECT COUNT(*) FROM sightings si WHERE si.sticker_id = s.id) AS sighting_count
+     FROM stickers s WHERE s.design_id = ? ORDER BY s.created_at DESC`
+  ).bind(c.req.param('id')).all();
+  return c.json(results);
+});
+
+app.get('/designs/:id/sightings', async (c) => {
+  const { results } = await c.env.hmni_db.prepare(
+    `SELECT si.*, u.username, s.location_name, s.latitude, s.longitude, d.name AS design_name
+     FROM sightings si
+     LEFT JOIN users u ON si.user_id = u.id
+     LEFT JOIN stickers s ON si.sticker_id = s.id
+     LEFT JOIN designs d ON si.design_id = d.id
+     WHERE si.design_id = ? ORDER BY si.logged_at DESC`
   ).bind(c.req.param('id')).all();
   return c.json(results);
 });
@@ -98,7 +113,7 @@ app.get('/users/search', async (c) => {
   if (!q) return c.json([]);
   const like = `%${q}%`;
   const { results } = await c.env.hmni_db.prepare(
-    `SELECT u.*, (SELECT COUNT(*) FROM stickers WHERE user_id = u.id) AS sticker_count
+    `SELECT u.*, (SELECT COUNT(*) FROM sightings WHERE user_id = u.id) AS sighting_count
      FROM users u WHERE u.username LIKE ? ORDER BY u.username`
   ).bind(like).all();
   return c.json(results);
@@ -112,9 +127,13 @@ app.get('/users/:id', async (c) => {
   return c.json(row);
 });
 
-app.get('/users/:id/stickers', async (c) => {
+app.get('/users/:id/sightings', async (c) => {
   const { results } = await c.env.hmni_db.prepare(
-    'SELECT * FROM stickers WHERE user_id = ? ORDER BY logged_at DESC'
+    `SELECT si.*, s.location_name, s.latitude, s.longitude, d.name AS design_name
+     FROM sightings si
+     LEFT JOIN stickers s ON si.sticker_id = s.id
+     LEFT JOIN designs d ON si.design_id = d.id
+     WHERE si.user_id = ? ORDER BY si.logged_at DESC`
   ).bind(c.req.param('id')).all();
   return c.json(results);
 });
@@ -143,42 +162,64 @@ app.post('/users', async (c) => {
 
 app.get('/stickers', async (c) => {
   const { results } = await c.env.hmni_db.prepare(
-    'SELECT * FROM stickers ORDER BY logged_at DESC'
+    `SELECT s.*,
+       (SELECT si.photo_uri FROM sightings si WHERE si.sticker_id = s.id ORDER BY si.logged_at ASC LIMIT 1) AS photo_uri
+     FROM stickers s ORDER BY s.created_at DESC`
   ).all();
   return c.json(results);
 });
 
 app.get('/stickers/:id', async (c) => {
-  const row = await c.env.hmni_db.prepare(
-    `SELECT s.*, d.name AS design_name, u.username
+  const sticker = await c.env.hmni_db.prepare(
+    `SELECT s.*, d.name AS design_name
      FROM stickers s
      LEFT JOIN designs d ON s.design_id = d.id
-     LEFT JOIN users u ON s.user_id = u.id
      WHERE s.id = ?`
   ).bind(c.req.param('id')).first();
-  if (!row) return c.json({ error: 'Not found' }, 404);
-  return c.json(row);
+  if (!sticker) return c.json({ error: 'Not found' }, 404);
+
+  const { results: sightings } = await c.env.hmni_db.prepare(
+    `SELECT si.*, u.username
+     FROM sightings si
+     LEFT JOIN users u ON si.user_id = u.id
+     WHERE si.sticker_id = ? ORDER BY si.logged_at DESC`
+  ).bind(c.req.param('id')).all();
+
+  return c.json({ ...sticker, sightings });
 });
 
 app.post('/stickers', async (c) => {
   const body = await c.req.json<{
     designId: string;
-    userId: string;
-    photoUri?: string;
     latitude: number;
     longitude: number;
     locationName?: string;
-    note?: string;
   }>();
   const id = `s${Date.now()}`;
   await c.env.hmni_db.prepare(
-    `INSERT INTO stickers (id, design_id, user_id, photo_uri, latitude, longitude, location_name, note)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(
-    id, body.designId, body.userId, body.photoUri ?? '',
-    body.latitude, body.longitude, body.locationName ?? '', body.note ?? ''
-  ).run();
+    `INSERT INTO stickers (id, design_id, latitude, longitude, location_name)
+     VALUES (?, ?, ?, ?, ?)`
+  ).bind(id, body.designId, body.latitude, body.longitude, body.locationName ?? '').run();
   const row = await c.env.hmni_db.prepare('SELECT * FROM stickers WHERE id = ?').bind(id).first();
+  return c.json(row, 201);
+});
+
+// ---------- Sightings ----------
+
+app.post('/sightings', async (c) => {
+  const body = await c.req.json<{
+    stickerId: string;
+    designId: string;
+    userId: string;
+    photoUri?: string;
+    note?: string;
+  }>();
+  const id = `si${Date.now()}`;
+  await c.env.hmni_db.prepare(
+    `INSERT INTO sightings (id, sticker_id, design_id, user_id, photo_uri, note)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).bind(id, body.stickerId, body.designId, body.userId, body.photoUri ?? '', body.note ?? '').run();
+  const row = await c.env.hmni_db.prepare('SELECT * FROM sightings WHERE id = ?').bind(id).first();
   return c.json(row, 201);
 });
 

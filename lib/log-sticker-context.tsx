@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import { createDesign, createSticker, uploadPhoto } from './api';
-import type { Sticker } from './types';
+import { createDesign, createSighting, createSticker, uploadPhoto } from './api';
 
 interface LogStickerState {
   photoUri: string | null;
@@ -10,6 +9,7 @@ interface LogStickerState {
   designId: string | null;
   newDesignName: string | null;
   newDesignDescription: string | null;
+  stickerId: string | null;
   note: string;
 }
 
@@ -17,8 +17,9 @@ interface LogStickerContextValue extends LogStickerState {
   setPhoto: (uri: string, lat: number, lng: number) => void;
   setDesignId: (id: string) => void;
   setNewDesign: (name: string, description: string) => void;
+  setStickerId: (id: string) => void;
   setNote: (note: string) => void;
-  submit: (userId: string) => Promise<Sticker>;
+  submit: (userId: string) => Promise<{ stickerId: string }>;
   reset: () => void;
 }
 
@@ -29,6 +30,7 @@ const initial: LogStickerState = {
   designId: null,
   newDesignName: null,
   newDesignDescription: null,
+  stickerId: null,
   note: '',
 };
 
@@ -49,11 +51,15 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, designId: null, newDesignName: name, newDesignDescription: description }));
   }
 
+  function setStickerId(id: string) {
+    setState((s) => ({ ...s, stickerId: id }));
+  }
+
   function setNote(note: string) {
     setState((s) => ({ ...s, note }));
   }
 
-  async function submit(userId: string): Promise<Sticker> {
+  async function submit(userId: string): Promise<{ stickerId: string }> {
     // Upload photo to R2
     let photoUrl = '';
     if (state.photoUri) {
@@ -72,18 +78,28 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
       designId = design.id;
     }
 
-    const sticker = await createSticker({
+    let stickerId = state.stickerId;
+
+    if (!stickerId) {
+      const sticker = await createSticker({
+        designId: designId!,
+        latitude: state.latitude || 0,
+        longitude: state.longitude || 0,
+        locationName: 'Logged location',
+      });
+      stickerId = sticker.id;
+    }
+
+    await createSighting({
+      stickerId,
       designId: designId!,
       userId,
       photoUri: photoUrl,
-      latitude: state.latitude || 0,
-      longitude: state.longitude || 0,
-      locationName: 'Logged location',
       note: state.note,
     });
 
     setState(initial);
-    return sticker;
+    return { stickerId };
   }
 
   function reset() {
@@ -92,7 +108,7 @@ export function LogStickerProvider({ children }: { children: ReactNode }) {
 
   return (
     <LogStickerContext.Provider
-      value={{ ...state, setPhoto, setDesignId, setNewDesign, setNote, submit, reset }}>
+      value={{ ...state, setPhoto, setDesignId, setNewDesign, setStickerId, setNote, submit, reset }}>
       {children}
     </LogStickerContext.Provider>
   );

@@ -27,6 +27,7 @@ export default function RootLayout() {
             <Stack.Screen name="log/camera" options={{ title: 'Take Photo' }} />
             <Stack.Screen name="log/match-design" options={{ title: 'Match Design' }} />
             <Stack.Screen name="log/new-design" options={{ title: 'New Design' }} />
+            <Stack.Screen name="log/match-sticker" options={{ title: 'Match Sticker' }} />
             <Stack.Screen name="log/note" options={{ title: 'Add Note' }} />
           </Stack>
           <StatusBar style="auto" />

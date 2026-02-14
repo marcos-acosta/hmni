@@ -17,15 +17,24 @@ CREATE TABLE IF NOT EXISTS designs (
 CREATE TABLE IF NOT EXISTS stickers (
   id TEXT PRIMARY KEY,
   design_id TEXT NOT NULL REFERENCES designs(id),
-  user_id TEXT NOT NULL REFERENCES users(id),
-  photo_uri TEXT NOT NULL DEFAULT '',
   latitude REAL NOT NULL DEFAULT 0,
   longitude REAL NOT NULL DEFAULT 0,
   location_name TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sightings (
+  id TEXT PRIMARY KEY,
+  sticker_id TEXT NOT NULL REFERENCES stickers(id),
+  design_id TEXT NOT NULL REFERENCES designs(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  photo_uri TEXT NOT NULL DEFAULT '',
   note TEXT NOT NULL DEFAULT '',
   logged_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_designs_creator ON designs(creator_id);
 CREATE INDEX IF NOT EXISTS idx_stickers_design ON stickers(design_id);
-CREATE INDEX IF NOT EXISTS idx_stickers_user ON stickers(user_id);
+CREATE INDEX IF NOT EXISTS idx_sightings_sticker ON sightings(sticker_id);
+CREATE INDEX IF NOT EXISTS idx_sightings_design ON sightings(design_id);
+CREATE INDEX IF NOT EXISTS idx_sightings_user ON sightings(user_id);

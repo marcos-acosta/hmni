@@ -6,9 +6,12 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'reac
 import { StickerMap } from '@/components/sticker-map';
 import { ThemedText } from '@/components/themed-text';
 import { fetchSticker } from '@/lib/api';
-import type { Sticker } from '@/lib/types';
+import type { Sighting, Sticker } from '@/lib/types';
 
-type StickerDetail = Sticker & { designName?: string; username?: string };
+type StickerDetail = Sticker & {
+  designName?: string;
+  sightings: (Sighting & { username?: string })[];
+};
 
 export default function StickerDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -17,7 +20,7 @@ export default function StickerDetailScreen() {
 
   useEffect(() => {
     fetchSticker(id).then((s) => {
-      setSticker(s);
+      setSticker(s as StickerDetail | null);
       setLoading(false);
     });
   }, [id]);
@@ -34,11 +37,13 @@ export default function StickerDetailScreen() {
     );
   }
 
-  const date = new Date(sticker.loggedAt).toLocaleDateString();
+  const heroPhoto = sticker.sightings[0]?.photoUri;
 
   return (
     <ScrollView contentContainerStyle={styles.content}>
-      <Image source={sticker.photoUri} style={styles.photo} contentFit="cover" />
+      {heroPhoto && (
+        <Image source={heroPhoto} style={styles.photo} contentFit="cover" />
+      )}
 
       {sticker.designName && (
         <Link href={`/design/${sticker.designId}`} asChild>
@@ -50,22 +55,7 @@ export default function StickerDetailScreen() {
         </Link>
       )}
 
-      {sticker.username && (
-        <Link href={`/user/${sticker.userId}`} asChild>
-          <Pressable>
-            <ThemedText type="link" style={styles.link}>
-              Logged by {sticker.username}
-            </ThemedText>
-          </Pressable>
-        </Link>
-      )}
-
-      <ThemedText style={styles.date}>{date}</ThemedText>
       <ThemedText style={styles.location}>{sticker.locationName}</ThemedText>
-
-      {sticker.note ? (
-        <ThemedText style={styles.note}>{sticker.note}</ThemedText>
-      ) : null}
 
       <StickerMap
         stickers={[sticker]}
@@ -74,6 +64,35 @@ export default function StickerDetailScreen() {
         centerCoordinate={[sticker.longitude, sticker.latitude]}
         zoomLevel={14}
       />
+
+      <ThemedText type="subtitle" style={styles.sightingsTitle}>
+        Sightings ({sticker.sightings.length})
+      </ThemedText>
+
+      {sticker.sightings.map((sighting) => (
+        <View key={sighting.id} style={styles.sightingCard}>
+          {sighting.photoUri ? (
+            <Image source={sighting.photoUri} style={styles.sightingPhoto} contentFit="cover" />
+          ) : null}
+          <View style={styles.sightingInfo}>
+            {sighting.username && (
+              <Link href={`/user/${sighting.userId}`} asChild>
+                <Pressable>
+                  <ThemedText type="link" style={styles.sightingUser}>
+                    {sighting.username}
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            )}
+            {sighting.note ? (
+              <ThemedText style={styles.sightingNote}>{sighting.note}</ThemedText>
+            ) : null}
+            <ThemedText style={styles.sightingDate}>
+              {new Date(sighting.loggedAt).toLocaleDateString()}
+            </ThemedText>
+          </View>
+        </View>
+      ))}
     </ScrollView>
   );
 }
@@ -83,8 +102,17 @@ const styles = StyleSheet.create({
   content: { padding: 16, paddingBottom: 32 },
   photo: { width: '100%', height: 300, borderRadius: 12, marginBottom: 16 },
   link: { marginBottom: 8 },
-  date: { opacity: 0.5, marginBottom: 4 },
   location: { fontWeight: '600', marginBottom: 8 },
-  note: { marginTop: 8, fontStyle: 'italic', opacity: 0.7, marginBottom: 16 },
-  map: { height: 180, borderRadius: 12, overflow: 'hidden', marginTop: 8 },
+  map: { height: 180, borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
+  sightingsTitle: { marginTop: 8, marginBottom: 12 },
+  sightingCard: {
+    flexDirection: 'row',
+    marginBottom: 16,
+    gap: 12,
+  },
+  sightingPhoto: { width: 80, height: 80, borderRadius: 8 },
+  sightingInfo: { flex: 1, justifyContent: 'center' },
+  sightingUser: { fontWeight: '600', marginBottom: 2 },
+  sightingNote: { fontStyle: 'italic', opacity: 0.7, marginBottom: 2 },
+  sightingDate: { opacity: 0.5, fontSize: 13 },
 });

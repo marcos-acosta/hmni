@@ -17,11 +17,18 @@ export interface Design {
 export interface Sticker {
   id: string;
   designId: string;
-  userId: string;
-  photoUri: string; // placeholder URL
   latitude: number;
   longitude: number;
   locationName: string;
+  createdAt: string; // ISO date
+}
+
+export interface Sighting {
+  id: string;
+  stickerId: string;
+  designId: string;
+  userId: string;
+  photoUri: string;
   note: string;
   loggedAt: string; // ISO date
 }

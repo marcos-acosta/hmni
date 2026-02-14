@@ -18,7 +18,7 @@ export default function SearchScreen() {
   const textColor = useThemeColor({}, 'text');
 
   const [designResults, setDesignResults] = useState<Design[]>([]);
-  const [userResults, setUserResults] = useState<(User & { stickerCount?: number })[]>([]);
+  const [userResults, setUserResults] = useState<(User & { sightingCount?: number })[]>([]);
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function SearchScreen() {
           data={userResults}
           keyExtractor={(u) => u.id}
           keyboardShouldPersistTaps="handled"
-          renderItem={({ item }) => <UserCard user={item} stickerCount={item.stickerCount} />}
+          renderItem={({ item }) => <UserCard user={item} sightingCount={item.sightingCount} />}
           ListEmptyComponent={
             !searching ? (
               query ? (

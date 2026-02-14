@@ -3,22 +3,22 @@ import { Link } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
-import type { User, Sticker } from '@/lib/types';
+import type { Sighting, User } from '@/lib/types';
 
 export function UserProfile({
   user,
-  stickers,
+  sightings,
   designCount,
   actions,
 }: {
   user: User;
-  stickers: Sticker[];
+  sightings: (Sighting & { stickerId: string })[];
   designCount: number;
   actions?: React.ReactNode;
 }) {
   return (
     <FlatList
-      data={stickers}
+      data={sightings}
       keyExtractor={(s) => s.id}
       numColumns={3}
       contentContainerStyle={styles.list}
@@ -34,8 +34,8 @@ export function UserProfile({
           </ThemedText>
           <View style={styles.statsRow}>
             <View style={styles.stat}>
-              <ThemedText style={styles.statNum}>{stickers.length}</ThemedText>
-              <ThemedText style={styles.statLabel}>Stickers</ThemedText>
+              <ThemedText style={styles.statNum}>{sightings.length}</ThemedText>
+              <ThemedText style={styles.statLabel}>Sightings</ThemedText>
             </View>
             <View style={styles.stat}>
               <ThemedText style={styles.statNum}>{designCount}</ThemedText>
@@ -48,19 +48,19 @@ export function UserProfile({
           </ThemedText>
         </View>
       }
-      renderItem={({ item }) => <TimelineItem sticker={item} />}
+      renderItem={({ item }) => <TimelineItem sighting={item} />}
       ListEmptyComponent={
-        <ThemedText style={styles.empty}>No stickers logged yet.</ThemedText>
+        <ThemedText style={styles.empty}>No sightings logged yet.</ThemedText>
       }
     />
   );
 }
 
-function TimelineItem({ sticker }: { sticker: Sticker }) {
+function TimelineItem({ sighting }: { sighting: Sighting }) {
   return (
-    <Link href={`/sticker/${sticker.id}`} asChild>
+    <Link href={`/sticker/${sighting.stickerId}`} asChild>
       <Pressable style={styles.timelineItem}>
-        <Image source={sticker.photoUri} style={styles.timelineImage} contentFit="cover" />
+        <Image source={sighting.photoUri} style={styles.timelineImage} contentFit="cover" />
       </Pressable>
     </Link>
   );

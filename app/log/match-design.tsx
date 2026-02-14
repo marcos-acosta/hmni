@@ -22,7 +22,7 @@ export default function MatchDesignScreen() {
 
   function pickDesign(id: string) {
     setDesignId(id);
-    router.push('/log/note');
+    router.push('/log/match-sticker');
   }
 
   return (

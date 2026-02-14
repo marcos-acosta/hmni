@@ -4,21 +4,21 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { UserProfile } from '@/components/user-profile';
-import { fetchUser, fetchUserStickers, fetchUserDesigns } from '@/lib/api';
-import type { Sticker, User } from '@/lib/types';
+import { fetchUser, fetchUserSightings, fetchUserDesigns } from '@/lib/api';
+import type { Sighting, User } from '@/lib/types';
 
 export default function UserDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [user, setUser] = useState<User | null>(null);
-  const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [sightings, setSightings] = useState<Sighting[]>([]);
   const [designCount, setDesignCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([fetchUser(id), fetchUserStickers(id), fetchUserDesigns(id)]).then(
+    Promise.all([fetchUser(id), fetchUserSightings(id), fetchUserDesigns(id)]).then(
       ([u, s, d]) => {
         setUser(u);
-        setStickers(s);
+        setSightings(s);
         setDesignCount(d.length);
         setLoading(false);
       }
@@ -37,7 +37,7 @@ export default function UserDetailScreen() {
     );
   }
 
-  return <UserProfile user={user} stickers={stickers} designCount={designCount} />;
+  return <UserProfile user={user} sightings={sightings} designCount={designCount} />;
 }
 
 const styles = StyleSheet.create({
