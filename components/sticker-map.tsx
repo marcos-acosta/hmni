@@ -28,16 +28,34 @@ export function StickerMap({
   initialRegion: savedRegion,
   onRegionChange,
 }: StickerMapProps) {
-  const center = centerCoordinate ??
-    (stickers.length > 0
-      ? [stickers[0].longitude, stickers[0].latitude]
-      : [-73.97, 40.71]);
-
-  const defaultRegion: Region = {
-    latitude: center[1],
-    longitude: center[0],
-    ...zoomToDelta(zoomLevel),
-  };
+  const defaultRegion: Region = (() => {
+    if (centerCoordinate) {
+      return {
+        latitude: centerCoordinate[1],
+        longitude: centerCoordinate[0],
+        ...zoomToDelta(zoomLevel),
+      };
+    }
+    if (stickers.length === 0) {
+      return { latitude: 40.71, longitude: -73.97, ...zoomToDelta(zoomLevel) };
+    }
+    let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+    for (const s of stickers) {
+      if (s.latitude < minLat) minLat = s.latitude;
+      if (s.latitude > maxLat) maxLat = s.latitude;
+      if (s.longitude < minLng) minLng = s.longitude;
+      if (s.longitude > maxLng) maxLng = s.longitude;
+    }
+    const padding = 1.3;
+    const latDelta = Math.max((maxLat - minLat) * padding, 0.005);
+    const lngDelta = Math.max((maxLng - minLng) * padding, 0.005);
+    return {
+      latitude: (minLat + maxLat) / 2,
+      longitude: (minLng + maxLng) / 2,
+      latitudeDelta: latDelta,
+      longitudeDelta: lngDelta,
+    };
+  })();
 
   return (
     <View style={[styles.container, style]}>
