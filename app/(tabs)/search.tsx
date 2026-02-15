@@ -6,35 +6,39 @@ import { DesignCard } from '@/components/design-card';
 import { ThemedText } from '@/components/themed-text';
 import { UserCard } from '@/components/user-card';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { searchDesignsApi, searchUsersApi } from '@/lib/api';
-import type { Design, User } from '@/lib/types';
+import { searchUsersApi } from '@/lib/api';
+import type { User } from '@/lib/types';
+import { useDesignSearch } from '@/lib/use-design-search';
 
 type Mode = 'designs' | 'users';
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
-  const [query, setQuery] = useState('');
   const [mode, setMode] = useState<Mode>('designs');
   const textColor = useThemeColor({}, 'text');
 
-  const [designResults, setDesignResults] = useState<Design[]>([]);
+  const designSearch = useDesignSearch(0);
+
+  const [userQuery, setUserQuery] = useState('');
   const [userResults, setUserResults] = useState<(User & { sightingCount?: number })[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [searchingUsers, setSearchingUsers] = useState(false);
 
   useEffect(() => {
-    if (!query) {
-      setDesignResults([]);
+    if (!userQuery) {
       setUserResults([]);
       return;
     }
     let stale = false;
-    setSearching(true);
-    const search = mode === 'designs'
-      ? searchDesignsApi(query).then((r) => { if (!stale) setDesignResults(r); })
-      : searchUsersApi(query).then((r) => { if (!stale) setUserResults(r); });
-    search.finally(() => { if (!stale) setSearching(false); });
+    setSearchingUsers(true);
+    searchUsersApi(userQuery)
+      .then((r) => { if (!stale) setUserResults(r); })
+      .finally(() => { if (!stale) setSearchingUsers(false); });
     return () => { stale = true; };
-  }, [query, mode]);
+  }, [userQuery]);
+
+  const query = mode === 'designs' ? designSearch.query : userQuery;
+  const setQuery = mode === 'designs' ? designSearch.setQuery : setUserQuery;
+  const searching = mode === 'designs' ? designSearch.searching : searchingUsers;
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -70,7 +74,7 @@ export default function SearchScreen() {
       {mode === 'designs' ? (
         <FlatList
           key="designs"
-          data={designResults}
+          data={designSearch.results}
           keyExtractor={(d) => d.id}
           numColumns={2}
           keyboardShouldPersistTaps="handled"

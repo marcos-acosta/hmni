@@ -1,24 +1,17 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
+import { DesignCard } from '@/components/design-card';
 import { ThemedText } from '@/components/themed-text';
-import { fetchDesigns } from '@/lib/api';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { useLogSticker } from '@/lib/log-sticker-context';
-import type { Design } from '@/lib/types';
+import { useDesignSearch } from '@/lib/use-design-search';
 
 export default function MatchDesignScreen() {
   const { photoUri, setDesignId } = useLogSticker();
-  const [designs, setDesigns] = useState<Design[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchDesigns().then((d) => {
-      setDesigns(d);
-      setLoading(false);
-    });
-  }, []);
+  const { query, setQuery, results, searching } = useDesignSearch(10);
+  const textColor = useThemeColor({}, 'text');
 
   function pickDesign(id: string) {
     setDesignId(id);
@@ -27,9 +20,10 @@ export default function MatchDesignScreen() {
 
   return (
     <FlatList
-      data={designs}
+      data={results}
       keyExtractor={(d) => d.id}
       numColumns={2}
+      keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.list}
       ListHeaderComponent={
         <View style={styles.header}>
@@ -37,19 +31,23 @@ export default function MatchDesignScreen() {
             <Image source={photoUri} style={styles.preview} contentFit="cover" />
           )}
           <ThemedText type="subtitle">Which design is this?</ThemedText>
+          <TextInput
+            style={[styles.input, { color: textColor, borderColor: textColor + '33' }]}
+            placeholder="Search designs..."
+            placeholderTextColor={textColor + '66'}
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
           <Pressable style={styles.newButton} onPress={() => router.push('/log/new-design')}>
             <ThemedText style={styles.newButtonText}>+ New Design</ThemedText>
           </Pressable>
-          {loading && <ActivityIndicator style={styles.loader} />}
+          {searching && <ActivityIndicator style={styles.loader} />}
         </View>
       }
       renderItem={({ item }) => (
-        <Pressable style={styles.designCard} onPress={() => pickDesign(item.id)}>
-          <Image source={item.imageUrl} style={styles.designImage} contentFit="cover" />
-          <ThemedText numberOfLines={1} style={styles.designName}>
-            {item.name}
-          </ThemedText>
-        </Pressable>
+        <DesignCard design={item} onPress={() => pickDesign(item.id)} />
       )}
     />
   );
@@ -59,6 +57,14 @@ const styles = StyleSheet.create({
   list: { padding: 8 },
   header: { alignItems: 'center', padding: 16 },
   preview: { width: 120, height: 120, borderRadius: 12, marginBottom: 12 },
+  input: {
+    alignSelf: 'stretch',
+    marginTop: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+  },
   newButton: {
     marginTop: 12,
     paddingVertical: 10,
@@ -72,21 +78,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   loader: { marginTop: 12 },
-  designCard: {
-    flex: 1,
-    margin: 4,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  designImage: {
-    aspectRatio: 1,
-    width: '100%',
-    borderRadius: 8,
-  },
-  designName: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 4,
-    paddingHorizontal: 2,
-  },
 });
